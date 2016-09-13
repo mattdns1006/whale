@@ -58,6 +58,36 @@ end
 
 function models.model1() 
 	local model = nn.Sequential()
+	local featInc = 8 
+	local nInputs =  16 
+	local nOutputs = nInputs + featInc
+
+	for i = 1, 4 do 
+		if i == 1 then nInputs = 3 end
+		model:add(Convolution(nInputs,nOutputs,3,3,1,1,1,1))
+		model:add(SBN(nOutputs))
+		model:add(af())
+		model:add(Convolution(nOutputs,nOutputs,3,3,1,1,1,1))
+		model:add(SBN(nOutputs))
+		model:add(af())
+		model:add(Pool(3,3,2,2,1,1))
+		nInputs = nOutputs
+		nOutputs = nOutputs + featInc
+	end
+	for i = 1, 1 do 
+
+		model:add(Convolution(nInputs,nOutputs,3,3,1,1,1,1))
+		model:add(SBN(nOutputs))
+		model:add(af())
+		model:add(UpSample(2))
+		nInputs = nOutputs
+		nOutputs = nOutputs - featInc 
+	end
+
+	model:add(Convolution(nInputs,1,3,3,1,1,1,1))
+	model:add(SBN(1))
+	model:add(nn.Sigmoid())
+
 	layers.init(model)
 	return model
 end

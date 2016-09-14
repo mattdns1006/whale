@@ -101,7 +101,7 @@ function run()
 					else 
 					       outputs, loss = train(X,Y)
 					       dScore = diceScore(outputs,Y)
-					       display(X,Y,outputs,"train","-",2,3) 
+					       display(X,Y,outputs,"train",2,30) 
 					       i = i + 1
 					       table.insert(losses, loss)
 					       table.insert(dScores, dScore)
@@ -138,6 +138,7 @@ if params.run == 1 and params.test ==0 then run() end
 if params.test == 1 then
 	dofile("loadData.lua")
 	feed = loadData.init(1,1,1)
+	timer = torch.Timer()
 	local x, o
 	for i = 1, #pathsToFit do 
 		x,name = feed:getNextBatch("test")
@@ -149,6 +150,7 @@ if params.test == 1 then
 		end
 		collectgarbage()
 	end
+	print(string.format("Time taken = %f seconds ", timer:time().real))
 
 end
 

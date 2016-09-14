@@ -58,7 +58,7 @@ optimState = {learningRate = params.lr, beta1 = 0.9, beta2 = 0.999, epsilon = 1e
 optimMethod = optim.adam
 
 print("Model name ==>")
-modelName = "deconv.model"
+modelName = "deconv1.model"
 if params.loadModel == 1 then
 	print("==> Loading model")
 	model = torch.load(modelName):cuda()
@@ -87,6 +87,7 @@ function run()
 			       function(X,Y)
 				       local outputs, dstPath
 					if params.test == 1 then
+						model:evaluate()
 						outputs = model:forward(X)
 						for i = 1, outputs:size(1) do 
 							dstPath = Y[i]:gsub("w_","lf_")
@@ -99,13 +100,14 @@ function run()
 						--display(X,Y,outputs,"test",3,10)
 
 					else 
+					       model:training()
 					       outputs, loss = train(X,Y)
 					       dScore = diceScore(outputs,Y)
-					       display(X,Y,outputs,"train",2,30) 
+					       display(X,Y,outputs,"train",4,20) 
 					       i = i + 1
 					       table.insert(losses, loss)
 					       table.insert(dScores, dScore)
-					       if i % 20 ==0 then
+					       if i % 100 ==0 then
 						       local lT =  torch.Tensor(losses)
 						       local dST =  torch.Tensor(dScores)
 						       local t  =  torch.range(1,#losses)

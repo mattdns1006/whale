@@ -58,11 +58,11 @@ end
 
 function models.model1() 
 	local model = nn.Sequential()
-	local featInc = 8 
+	local featInc = 0
 	local nInputs =  16 
 	local nOutputs = nInputs + featInc
 
-	for i = 1, 4 do 
+	for i = 1, params.nDown do
 		if i == 1 then nInputs = 3 end
 		model:add(Convolution(nInputs,nOutputs,3,3,1,1,1,1))
 		model:add(SBN(nOutputs))
@@ -75,7 +75,7 @@ function models.model1()
 		nInputs = nOutputs
 		nOutputs = nOutputs + featInc
 	end
-	for i = 1, 1 do 
+	for i = 1, params.nUp do 
 
 		model:add(Convolution(nInputs,nOutputs,3,3,1,1,1,1))
 		model:add(SBN(nOutputs))

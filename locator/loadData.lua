@@ -52,7 +52,7 @@ function loadData:getNextBatch(trainOrTest)
 	local path
 	local counter = 1
 	local x, y, inW, inH 
-	local dsFactor = 2
+	local dsFactor = params.dsFactor
 
 	if trainOrTest == "train" then
 		while true do

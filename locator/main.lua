@@ -18,7 +18,7 @@ cmd:text("Options")
 cmd:option("-modelName","locator.model","Name of model.")
 cmd:option("-modelSave",5000,"How often to save.")
 cmd:option("-loadModel",0,"Load model.")
-cmd:option("-nThreads",3,"Number of threads.")
+cmd:option("-nThreads",8,"Number of threads.")
 cmd:option("-trainAll",0,"Train on all images in training set.")
 cmd:option("-actualTest",0,"Acutal test predictions.")
 
@@ -37,16 +37,18 @@ cmd:option("-display",0,"Display images.")
 cmd:option("-displayFreq",100,"Display images frequency.")
 cmd:option("-displayGraph",0,"Display graph of loss.")
 cmd:option("-displayGraphFreq",500,"Display graph of loss.")
-cmd:option("-nIter",10000,"Number of iterations.")
+cmd:option("-nIter",100000,"Number of iterations.")
 cmd:option("-zoom",3,"Image zoom.")
 
 cmd:option("-ma",100,"Moving average.")
 cmd:option("-run",1,"Run.")
 cmd:option("-modelSave",1000,"Model save frequency.")
 cmd:option("-test",0,"Test mode.")
+cmd:option("-saveTest",0,"Save test.")
 
-cmd:option("-nDown",8,"Number of down steps.")
-cmd:option("-nUp",2,"Number of up steps.")
+cmd:option("-nDown",4,"Number of down steps.")
+cmd:option("-nUp",1,"Number of up steps.")
+cmd:option("-dsFactor",2,"Reduce image by factor.")
 
 cmd:option("-outH",14,"Number of down steps.")
 cmd:option("-outW",20,"Number of up steps.")
@@ -103,11 +105,11 @@ function run()
 					       model:training()
 					       outputs, loss = train(X,Y)
 					       dScore = diceScore(outputs,Y)
-					       display(X,Y,outputs,"train",4,20) 
+					       display(X,Y,outputs,"train",4,10) 
 					       i = i + 1
 					       table.insert(losses, loss)
 					       table.insert(dScores, dScore)
-					       if i % 100 ==0 then
+					       if i % 200 ==0 then
 						       local lT =  torch.Tensor(losses)
 						       local dST =  torch.Tensor(dScores)
 						       local t  =  torch.range(1,#losses)
@@ -146,7 +148,13 @@ if params.test == 1 then
 		x,name = feed:getNextBatch("test")
 		o = model:forward(x)
 		dstPath = name[1]:gsub("wS_","lf_")
-		image.save(dstPath,o[1])
+		if params.saveTest == 1 then
+			image.save(dstPath,o[1])
+		else 
+			display(x,name,o,"test",4,0)
+			sys.sleep(1)
+		end
+
 		if i % 50 == 0 then 
 			xlua.progress(i,#pathsToFit)
 		end

@@ -96,8 +96,8 @@ function loadData:getNextBatch(trainOrTest)
 end
 
 function testLoadData()
-	bs = 6
-	nThreads = 60
+	bs = 10
+	nThreads = 1
 	dofile("/Users/matt/torchFunctions/shuffle.lua")
 	params = {}
 	params.outW = 40

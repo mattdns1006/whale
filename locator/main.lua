@@ -30,14 +30,14 @@ cmd:option("-kernelSize",3,"Kernel size.")
 
 cmd:option("-bs",3,"Batch size.")
 cmd:option("-lr",0.001,"Learning rate.")
-cmd:option("-lrDecay",1.2,"Learning rate change factor.")
+cmd:option("-lrDecay",1.1,"Learning rate change factor.")
 cmd:option("-lrChange",10000,"How often to change lr.")
 
 cmd:option("-display",0,"Display images.")
 cmd:option("-displayFreq",100,"Display images frequency.")
 cmd:option("-displayGraph",0,"Display graph of loss.")
 cmd:option("-displayGraphFreq",500,"Display graph of loss.")
-cmd:option("-nIter",100000,"Number of iterations.")
+cmd:option("-nIter",1000000,"Number of iterations.")
 cmd:option("-zoom",3,"Image zoom.")
 
 cmd:option("-ma",100,"Moving average.")
@@ -60,7 +60,7 @@ optimState = {learningRate = params.lr, beta1 = 0.9, beta2 = 0.999, epsilon = 1e
 optimMethod = optim.adam
 
 print("Model name ==>")
-modelName = "deconv1.model"
+modelName = "deconv2.model"
 if params.loadModel == 1 then
 	print("==> Loading model")
 	model = torch.load(modelName):cuda()
@@ -105,15 +105,19 @@ function run()
 					       model:training()
 					       outputs, loss = train(X,Y)
 					       dScore = diceScore(outputs,Y)
-					       display(X,Y,outputs,"train",4,10) 
+					       display(X,Y,outputs,"train",4,5) 
 					       i = i + 1
 					       table.insert(losses, loss)
 					       table.insert(dScores, dScore)
-					       if i % 200 ==0 then
+					       if i % 400 ==0 then
 						       local lT =  torch.Tensor(losses)
 						       local dST =  torch.Tensor(dScores)
-						       local t  =  torch.range(1,#losses)
-						       gnuplot.plot({t,lT},{t,dST})
+
+						       print(string.format("Mean loss and dice score = %f , %f. \n",lT:mean(),dST:mean()))
+						       losses = {}
+						       dScores = {}
+						       --local t  =  torch.range(1,#losses)
+						       --gnuplot.plot({t,lT},{t,dST})
 						        --collectgarbage()
 						end
 						xlua.progress(i,params.nIter)

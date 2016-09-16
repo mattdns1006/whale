@@ -58,7 +58,7 @@ end
 
 function models.model1() 
 	local model = nn.Sequential()
-	local featInc = 0
+	local featInc = 8
 	local nInputs =  16 
 	local nOutputs = nInputs + featInc
 
@@ -67,27 +67,31 @@ function models.model1()
 		model:add(Convolution(nInputs,nOutputs,3,3,1,1,1,1))
 		model:add(SBN(nOutputs))
 		model:add(af())
+		--[[
 		--model:add(nn.Dropout(0.1))
+
 		model:add(Convolution(nOutputs,nOutputs,3,3,1,1,1,1))
 		model:add(SBN(nOutputs))
 		model:add(af())
-		model:add(Pool(3,3,2,2,1,1))
+		]]--
+		model:add(Pool(2,2,2,2,0,0))
 		nInputs = nOutputs
 		nOutputs = nOutputs + featInc
 	end
-	for i = 1, params.nUp do 
-
-		model:add(Convolution(nInputs,nOutputs,3,3,1,1,1,1))
-		model:add(SBN(nOutputs))
-		model:add(af())
-		model:add(UpSample(2))
-		nInputs = nOutputs
-		nOutputs = nOutputs - featInc 
-	end
-
-	model:add(Convolution(nInputs,1,3,3,1,1,1,1))
-	model:add(SBN(1))
-	model:add(nn.Sigmoid())
+	local egX = torch.rand(1,3,params.inH,params.inW):cuda()
+	local oSize = model:cuda():forward(egX):size()
+	local nEl = oSize[2]*oSize[3]*oSize[4]
+	print("Size before reshape = ",oSize)
+	model:add(nn.View(nEl))
+	model:add(nn.Linear(nEl,40))
+	model:add(af())
+	model:add(nn.BatchNormalization(40))
+	model:add(nn.Linear(40,2))
+	--model:add(nn.Sigmoid())
+	--[[
+	local oSize = model:cuda():forward(egX):size()
+	print("Size of output = ",oSize)
+	]]--
 
 	layers.init(model)
 	return model

@@ -58,8 +58,8 @@ end
 
 function models.model1() 
 	local model = nn.Sequential()
-	local featInc = 8
-	local nInputs =  16 
+	local featInc = params.nFeatsInc 
+	local nInputs =  params.nFeats 
 	local nOutputs = nInputs + featInc
 
 	for i = 1, params.nDown do
@@ -74,7 +74,7 @@ function models.model1()
 		model:add(SBN(nOutputs))
 		model:add(af())
 		]]--
-		model:add(Pool(2,2,2,2,0,0))
+		model:add(Pool(3,3,2,2,1,1))
 		nInputs = nOutputs
 		nOutputs = nOutputs + featInc
 	end
@@ -83,10 +83,14 @@ function models.model1()
 	local nEl = oSize[2]*oSize[3]*oSize[4]
 	print("Size before reshape = ",oSize)
 	model:add(nn.View(nEl))
-	model:add(nn.Linear(nEl,40))
+	nLin = 20
+	model:add(nn.Linear(nEl,nLin))
 	model:add(af())
-	model:add(nn.BatchNormalization(40))
-	model:add(nn.Linear(40,2))
+	model:add(nn.BatchNormalization(nLin))
+	model:add(nn.Linear(nLin,nLin))
+	model:add(af())
+	model:add(nn.BatchNormalization(nLin))
+	model:add(nn.Linear(nLin,2))
 	--model:add(nn.Sigmoid())
 	--[[
 	local oSize = model:cuda():forward(egX):size()

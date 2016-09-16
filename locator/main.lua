@@ -44,9 +44,11 @@ cmd:option("-modelSave",1000,"Model save frequency.")
 cmd:option("-test",0,"Test mode.")
 cmd:option("-saveTest",0,"Save test.")
 
-cmd:option("-nDown",5,"N blocks.")
-cmd:option("-inW",150,"Input size.")
-cmd:option("-inH",100,"Output size.")
+cmd:option("-nDown",4,"N blocks.")
+cmd:option("-inW",225,"Input size.")
+cmd:option("-inH",150,"Output size.")
+cmd:option("-nFeats",16,"N feats .")
+cmd:option("-nFeatsInc",32,"Number of features increasing.")
 
 cmd:text()
 

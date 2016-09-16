@@ -2,19 +2,30 @@ import pandas as pd
 import numpy as np
 import numpy.random as rng
 import sys
+import pdb
 
-# File will generate train and test cross validation set from train.csv
+# Encode the whale names into 1,2,3 ......, 447
 
+# Fn will generate train and test cross validation set from train.csv
 def makeCrossValidationCSVs(ratio):
     rng.seed(100689)
     df = pd.read_csv("train.csv")
-    nWhales = df.whaleID.unique().size
+    df = df.sort_values("whaleID")
+
+    whaleNames = df.whaleID.unique()
+    nWhales = whaleNames.size
     nObs = df.shape[0]
+    whaleDict = pd.Series(whaleNames).to_dict()
+    whaleDict = {v: k+1 for k, v in whaleDict.items()}
+    whaleDictEncode = lambda x: whaleDict.get(x)
+    df["label"] = df.whaleID.apply(whaleDictEncode)
+    
 
     rIdx = rng.permutation(nObs)
     df = df.reindex(rIdx)
     df.reset_index(drop=1,inplace=1)
 
+    df.to_csv("trainEncoded.csv")
     cutOff = np.floor(nObs*ratio).astype(np.uint16)
     train,test = df.ix[:cutOff], df.ix[cutOff:]
     train.to_csv("trainCV.csv")

@@ -5,12 +5,13 @@ require "cunn"
 require "xlua"
 require "optim"
 require "gnuplot"
-local fnsPath = "/Users/matt/torchFunctions/"
+local fnsPath = "/home/msmith/misc/torchFunctions/"
 fns = {}
-table.insert(fns,"layers.lua"); table.insert(fns,"csv.lua"); table.insert(fns,"shuffle.lua"); table.insert(fns,"diceScore.lua");
+table.insert(fns,"deconvDisplay.lua"); table.insert(fns,"layers.lua"); table.insert(fns,"csv.lua"); table.insert(fns,"shuffle.lua"); table.insert(fns,"diceScore.lua");
+dofile("/home/msmith/misc/torchFunctions/shuffle.lua")
 for k,v in ipairs(fns) do; dofile(fnsPath..v) end
+
 dofile("train.lua")
-dofile("display.lua")
 
 
 cmd = torch.CmdLine()
@@ -23,16 +24,19 @@ cmd:option("-nThreads",8,"Number of threads.")
 cmd:option("-trainAll",0,"Train on all images in training set.")
 cmd:option("-actualTest",0,"Acutal test predictions.")
 
+cmd:option("-inW",290,"Input size")
+cmd:option("-inH",210,"Input size")
+cmd:option("-sf",0.7,"Scaling factor.")
 cmd:option("-nFeats",22,"Number of features.")
 cmd:option("-kernelSize",3,"Kernel size.")
 
-cmd:option("-bs",4,"Batch size.")
-cmd:option("-lr",0.003,"Learning rate.")
-cmd:option("-lrDecay",1.2,"Learning rate change factor.")
+cmd:option("-bs",3,"Batch size.")
+cmd:option("-lr",0.001,"Learning rate.")
+cmd:option("-lrDecay",1.1,"Learning rate change factor.")
 cmd:option("-lrChange",10000,"How often to change lr.")
 
 cmd:option("-display",0,"Display images.")
-cmd:option("-displayFreq",3,"Display images seconds frequency.")
+cmd:option("-displayFreq",100,"Display images frequency.")
 cmd:option("-displayGraph",0,"Display graph of loss.")
 cmd:option("-displayGraphFreq",500,"Display graph of loss.")
 cmd:option("-nIter",1000000,"Number of iterations.")
@@ -44,12 +48,12 @@ cmd:option("-modelSave",1000,"Model save frequency.")
 cmd:option("-test",0,"Test mode.")
 cmd:option("-saveTest",0,"Save test.")
 
-cmd:option("-nDown",4,"N blocks.")
-cmd:option("-inW",225,"Input size.")
-cmd:option("-inH",150,"Output size.")
-cmd:option("-nFeats",16,"N feats .")
-cmd:option("-nFeatsInc",32,"Number of features increasing.")
+cmd:option("-nDown",4,"Number of down steps.")
+cmd:option("-nUp",1,"Number of up steps.")
+cmd:option("-dsFactor",2,"Reduce image by factor.")
 
+cmd:option("-outH",14,"Number of down steps.")
+cmd:option("-outW",20,"Number of up steps.")
 cmd:text()
 
 params = cmd:parse(arg)
@@ -58,14 +62,19 @@ optimState = {learningRate = params.lr, beta1 = 0.9, beta2 = 0.999, epsilon = 1e
 optimMethod = optim.adam
 
 print("Model name ==>")
-modelName = "locator.model"
+modelName = "deconv2.model"
 if params.loadModel == 1 then
 	print("==> Loading model")
 	model = torch.load(modelName):cuda()
 else 	
 	model = models.model1():cuda()
 end
-criterion = nn.AbsCriterion():cuda()
+testInput = torch.randn(1,3,params.inH,params.inW):cuda()
+outSize = model:forward(testInput):size()
+print("Output size ==> ", outSize)
+params.outH = outSize[3]
+params.outW = outSize[4]
+criterion = nn.MSECriterion():cuda()
 print("==> Init threads")
 dofile("donkeys.lua")
 
@@ -86,23 +95,39 @@ function run()
 			       end,
 			       function(X,Y)
 				       local outputs, dstPath
+					if params.test == 1 then
+						model:evaluate()
+						outputs = model:forward(X)
+						for i = 1, outputs:size(1) do 
+							dstPath = Y[i]:gsub("w_","lf_")
+							image.saveJPG(dstPath,outputs[i])
+						end
+						i = i + 1 
+						if i % 50 == 0 then 
+							xlua.progress(i,12007)
+						end
+						--display(X,Y,outputs,"test",3,10)
+
+					else 
 					       model:training()
 					       outputs, loss = train(X,Y)
-					       outputs:select(2,1):mul(params.inW)
-					       outputs:select(2,2):mul(params.inH)
-					       Y:select(2,1):mul(params.inW)
-					       Y:select(2,2):mul(params.inH)
-					       display(X,Y,outputs,"train",5,params.displayFreq) 
+					       dScore = diceScore(outputs,Y)
+					       display(X,Y,outputs,"train",4,5) 
 					       i = i + 1
 					       table.insert(losses, loss)
-					       if i % 50 ==0 then
+					       table.insert(dScores, dScore)
+					       if i % 400 ==0 then
 						       local lT =  torch.Tensor(losses)
-						       print(string.format("Mean loss %f",lT:mean()))
-						       losses = {}
-						       xlua.progress(i,params.nIter)
-						end
+						       local dST =  torch.Tensor(dScores)
 
-						--[[
+						       print(string.format("Mean loss and dice score = %f , %f. \n",lT:mean(),dST:mean()))
+						       losses = {}
+						       dScores = {}
+						       --local t  =  torch.range(1,#losses)
+						       --gnuplot.plot({t,lT},{t,dST})
+						        --collectgarbage()
+						end
+						xlua.progress(i,params.nIter)
 
 						if i % params.lrChange == 0 then
 							local clr = params.lr
@@ -110,16 +135,15 @@ function run()
 							print(string.format("Learning rate dropping from %f ====== > %f. ",clr,params.lr))
 							learningRate = params.lr
 						end
-						]]--
 						if i % params.modelSave == 0 then
 							print("==> Saving model " .. modelName .. ".")
 							torch.save(modelName,model)
 						end
 
-
+					  end
 					  collectgarbage()
-			         end
 				      
+			       end
 			     )
 	end
 end
@@ -130,19 +154,14 @@ if params.test == 1 then
 	dofile("loadData.lua")
 	feed = loadData.init(1,1,1)
 	timer = torch.Timer()
-	local x, o
-	model:evaluate()
 	for i = 1, #pathsToFit do 
+	--for i = 1, 3 do 
 		x,name = feed:getNextBatch("test")
-		o = model:forward(x)
-		dstPath = name[1]:gsub("wS_","lf_")
-		if params.saveTest == 1 then
-			image.save(dstPath,o[1])
-		else 
-			display(x,name,o,"test",4,0)
-			sys.sleep(1)
-		end
+		o = model:forward(x):squeeze()
+		o = image.scale(o:double(),params.inW,params.inH,"bilinear")
 
+		dstPath = name[1]:gsub("wS_","lf_")
+		image.save(dstPath,o)
 		if i % 50 == 0 then 
 			xlua.progress(i,#pathsToFit)
 		end

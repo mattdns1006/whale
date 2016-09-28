@@ -30,4 +30,6 @@ def allocateToDirs(): # allocates the whale into its designated whale folder
             pass
             os.rename(img,"test/"+img)
 
-
+if __name__ == "__main__":
+    makeDirs()
+    allocateToDirs()

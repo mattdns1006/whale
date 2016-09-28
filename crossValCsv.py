@@ -7,19 +7,23 @@ import pdb
 # Encode the whale names into 1,2,3 ......, 447
 
 # Fn will generate train and test cross validation set from train.csv
-def makeCrossValidationCSVs(ratio):
+def makeCrossValidationCSVs(ratio,subsetSize=10):
     rng.seed(100689)
     df = pd.read_csv("train.csv")
     df = df.sort_values("whaleID")
 
     whaleNames = df.whaleID.unique()
     nWhales = whaleNames.size
-    nObs = df.shape[0]
+
     whaleDict = pd.Series(whaleNames).to_dict()
     whaleDict = {v: k+1 for k, v in whaleDict.items()}
     whaleDictEncode = lambda x: whaleDict.get(x)
     df["label"] = df.whaleID.apply(whaleDictEncode)
+    df = df.loc[df["label"]<=subsetSize]
+    pdb.set_trace()
+    df.reset_index(drop=1,inplace=1)
     
+    nObs = df.shape[0]
 
     rIdx = rng.permutation(nObs)
     df = df.reindex(rIdx)

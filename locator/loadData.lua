@@ -1,7 +1,8 @@
 require "paths"
 require "image"
 require "cunn"
-dofile("/Users/matt/torchFunctions/shuffle.lua")
+dofile("/home/msmith/misc/torchFunctions/shuffle.lua")
+
 
 loadData = {}
 loadData.__index = loadData
@@ -15,15 +16,6 @@ for d in paths.iterdirs(dir) do
 		f = d .. f
 		pathsToFit[#pathsToFit + 1] = f
 	end
-end
-
-function imageCentroid(img)
-	assert(img:nDimension() == 2,"needs to be of dim 2")
-	local nH, nW = img:size(1), img:size(2)
-	local sumH, sumW, sum = img:sum(2), img:sum(1), img:sum()
-	local h, w = torch.range(1,nH), torch.range(1,nW)
-	local mH,mW = torch.cmul(h,sumH):sum()/sum, torch.cmul(w,sumW):sum()/sum
-	return mW, mH
 end
 
 function loadData.init(tid,nThreads,batchSize) 
@@ -58,74 +50,68 @@ end
 function loadData:getNextBatch(trainOrTest)
 	local X = {}
 	local Y = {}
+	local path
 	local counter = 1
-	local x, y, inW, inH, mask, path
+	local x, y, inW, inH 
+	local dsFactor = params.dsFactor
+	local inW, inH = params.inW, params.inH 
 
 	if trainOrTest == "train" then
 		while true do
 			path = self.xPaths[self.idx]
 			x = image.loadPNG("augmented/"..path)
-			--x = x:csub(x:mean())
-			inW, inH = params.inW, params.inH 
+
 			x = image.scale(x,inW,inH,"bilinear"):resize(1,3,inH,inW)
 			table.insert(X, x)
-			mask = image.loadPNG("augmented/"..path:gsub("x_","y_"),1)
-			mask = image.scale(mask,inW,inH,"bilinear")
-			mx,my = imageCentroid(mask)
-			mx = mx/inW  -- normalize
-			my = my/inH  -- normalize
-			y = torch.Tensor{mx,my}:resize(1,2)
-			table.insert(Y, y)
-
-			
+			y = image.loadPNG("augmented/"..path:gsub("x_","y_"))
+			y = image.scale(y,params.outW,params.outH,"bilinear"):resize(1,3,params.outH,params.outW)
+			table.insert(Y,y) 
 			if self.idx == #self.xPaths then self.idx = 1; self.epoch = self.epoch + 1; self.xPaths = shuffle(self.xPaths); else self.idx = self.idx + 1 end
 			if counter == self.bs then break else counter = counter + 1 end
-
 		end
 		self.X = torch.cat(X,1):cuda()
 		self.Y = torch.cat(Y,1):cuda()
 		collectgarbage()
 		return self.X, self.Y
+	elseif trainOrTest == "test" then
+		if self.finishedTest == 1 then
+			print(tid, " is sleeping.")
+			sys.sleep(10)
+		else 
+			local names = {}
+			while true do
+				path = self.pathsToFit[self.idx]
+				names[#names + 1] = path
+				x = image.loadJPG(path)
+				inW, inH = self.xDims[3]/dsFactor, self.xDims[2]/dsFactor
+				x = image.scale(x,inW,inH,"bilinear"):resize(1,3,inH,inW)
+				table.insert(X, x)
+				if self.idx == #self.pathsToFit then self.finishedTest = 1 else; self.idx = self.idx + 1 end
+				if counter == self.bs then break else counter = counter + 1 end
+			end
+
+			self.X = torch.cat(X,1):cuda()
+			collectgarbage()
+			return self.X, names
+		end
 	end
 end
 
 function testLoadData()
 	bs = 10
-	nThreads = 100
+	nThreads = 1
 	dofile("/Users/matt/torchFunctions/shuffle.lua")
-	dis = image.display{image=torch.rand(100,100),zoom=5,offscreen=false}
-	
 	params = {}
 	params.outW = 40
 	params.outH = 32
-	params.inW = 150
-	params.inH = 100
-	params.dsFactor = 1
-	eg = loadData.init(1,nThreads,bs)
-	while true do
-		x,y = eg:getNextBatch("train")
-		image.display{image = x, win = dis}
-		print(eg.idx)
+	eg1 = loadData.init(1,nThreads,bs)
+	eg2 = loadData.init(2,nThreads,bs)
+	for i = 1, 5 do 
+		eg1:getNextBatch()
+		image.display(eg1.X)
+		sys.sleep(0.2)
+		print(i,eg1.idx,#eg1.xPaths,eg1.epoch)
 	end
-
-	--[[
-	while true do
-		x,y = eg:getNextBatch("train")
-		img = x[1]:double()
-		coords = y[1]:double()
-		coords[1] = coords[1]*params.inW
-		coords[2] = coords[2]*params.inH
-		print(coords)
-
-		mx,my =  coords[1], coords[2]
-		mx,my = math.floor(mx),math.floor(my)
-
-		if my - 4 < 1 or my + 4 >= img:size(2) or mx - 4 < 1 or mx + 4 > img:size(3) then
-			else
-		img:narrow(2,my-4,8):narrow(3,mx-4,8):fill(0)
-		image.display{image = img, win = dis}
-	end
-	]]--
 end
 
 

@@ -12,7 +12,6 @@ function train(inputs,targets)
 	function feval(x)
 		if x ~= parameters then parameters:copy(x) end
 		gradParameters:zero()
-
 		outputs = model:forward(inputs) -- Only one input for training unlike testing
 		dLdO = criterion:backward(outputs,targets)
 		loss = criterion:forward(outputs,targets)

@@ -12,7 +12,7 @@ pathsToFit = {}
 dir = "../imgs"
 for d in paths.iterdirs(dir) do
 	local d = dir .. "/" .. d .. "/"
-	for f in paths.files(d,"wS") do
+	for f in paths.files(d,"w"..tostring(params.toFitLevel)) do
 		f = d .. f
 		pathsToFit[#pathsToFit + 1] = f
 	end

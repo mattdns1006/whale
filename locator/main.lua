@@ -45,6 +45,7 @@ cmd:option("-zoom",3,"Image zoom.")
 cmd:option("-ma",100,"Moving average.")
 cmd:option("-run",1,"Run.")
 cmd:option("-modelSave",1000,"Model save frequency.")
+cmd:option("-toFitLevel",1,"Fitting (test mode) which level eg. 1 2 or 3.")
 cmd:option("-test",0,"Test mode.")
 cmd:option("-saveTest",0,"Save test.")
 
@@ -75,10 +76,10 @@ print("Output size ==> ", outSize)
 params.outH = outSize[3]
 params.outW = outSize[4]
 criterion = nn.MSECriterion():cuda()
-print("==> Init threads")
-dofile("donkeys.lua")
 
 function run()
+	print("==> Init threads")
+	dofile("donkeys.lua")
 	i = 1
 	losses = {}
 	dScores = {}
@@ -154,16 +155,25 @@ if params.test == 1 then
 	dofile("loadData.lua")
 	feed = loadData.init(1,1,1)
 	timer = torch.Timer()
+
+	if params.display == 1 then
+		if imgDisplay == nil then 
+			local initPic = torch.range(1,torch.pow(100,2),1):reshape(100,100)
+			imgDisplay0 = image.display{image=initPic, zoom=zoom, offscreen=false}
+		end
+	end
 	for i = 1, #pathsToFit do 
-	--for i = 1, 3 do 
 		x,name = feed:getNextBatch("test")
 		o = model:forward(x):squeeze()
-		o = image.scale(o:double(),params.inW,params.inH,"bilinear")
+		o = image.scale(o:double(),params.inW,params.inH)
 
-		dstPath = name[1]:gsub("wS_","lf_")
-		image.save(dstPath,o)
+		level = params.toFitLevel
+		dstName = name[1]:gsub("w"..tostring(level).."_","m"..tostring(level).."_") -- m for mask!
+		image.save(dstName,o)
+		print(level,name[1],dstName)
 		if i % 50 == 0 then 
 			xlua.progress(i,#pathsToFit)
+
 		end
 		collectgarbage()
 	end

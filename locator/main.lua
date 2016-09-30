@@ -24,14 +24,15 @@ cmd:option("-nThreads",8,"Number of threads.")
 cmd:option("-trainAll",0,"Train on all images in training set.")
 cmd:option("-actualTest",0,"Acutal test predictions.")
 
-cmd:option("-inW",290,"Input size")
-cmd:option("-inH",210,"Input size")
+cmd:option("-inW",400,"Input size")
+cmd:option("-inH",290,"Input size")
 cmd:option("-sf",0.7,"Scaling factor.")
-cmd:option("-nFeats",22,"Number of features.")
+cmd:option("-nFeats",16,"Number of features.")
+cmd:option("-featInc",32,"Number of features increasing.")
 cmd:option("-kernelSize",3,"Kernel size.")
 
 cmd:option("-bs",3,"Batch size.")
-cmd:option("-lr",0.001,"Learning rate.")
+cmd:option("-lr",0.0001,"Learning rate.")
 cmd:option("-lrDecay",1.1,"Learning rate change factor.")
 cmd:option("-lrChange",10000,"How often to change lr.")
 
@@ -44,7 +45,7 @@ cmd:option("-zoom",3,"Image zoom.")
 
 cmd:option("-ma",100,"Moving average.")
 cmd:option("-run",1,"Run.")
-cmd:option("-modelSave",1000,"Model save frequency.")
+cmd:option("-modelSave",5000,"Model save frequency.")
 cmd:option("-toFitLevel",1,"Fitting (test mode) which level eg. 1 2 or 3.")
 cmd:option("-test",0,"Test mode.")
 cmd:option("-saveTest",0,"Save test.")
@@ -63,7 +64,7 @@ optimState = {learningRate = params.lr, beta1 = 0.9, beta2 = 0.999, epsilon = 1e
 optimMethod = optim.adam
 
 print("Model name ==>")
-modelName = "deconv2.model"
+modelName = "deconv3.model"
 if params.loadModel == 1 then
 	print("==> Loading model")
 	model = torch.load(modelName):cuda()
@@ -162,18 +163,22 @@ if params.test == 1 then
 			imgDisplay0 = image.display{image=initPic, zoom=zoom, offscreen=false}
 		end
 	end
+	assert(#pathsToFit <= 11468,"Number to fit /< 11468")
 	for i = 1, #pathsToFit do 
 		x,name = feed:getNextBatch("test")
 		o = model:forward(x):squeeze()
 		o = image.scale(o:double(),params.inW,params.inH)
 
 		level = params.toFitLevel
-		dstName = name[1]:gsub("w"..tostring(level).."_","m"..tostring(level).."_") -- m for mask!
-		image.save(dstName,o)
-		print(level,name[1],dstName)
-		if i % 50 == 0 then 
-			xlua.progress(i,#pathsToFit)
+		dstName = name[1]:gsub(strMatch,"m"..tostring(level)) -- m for mask!
 
+		image.save(dstName,o)
+
+
+		if i % 25 == 0 then 
+			xlua.progress(i,#pathsToFit)
+			
+			print(level,name[1],dstName)
 		end
 		collectgarbage()
 	end

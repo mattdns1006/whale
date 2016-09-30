@@ -58,7 +58,7 @@ end
 
 function models.model1() 
 	local model = nn.Sequential()
-	local featInc = 0
+	local featInc = params.featInc 
 	local nInputs =  16 
 	local nOutputs = nInputs + featInc
 
@@ -68,15 +68,19 @@ function models.model1()
 		model:add(SBN(nOutputs))
 		model:add(af())
 		--model:add(nn.Dropout(0.1))
+		--[[
 		model:add(Convolution(nOutputs,nOutputs,3,3,1,1,1,1))
 		model:add(SBN(nOutputs))
 		model:add(af())
+		]]--
 		model:add(Pool(3,3,2,2,1,1))
+		
 		nInputs = nOutputs
 		nOutputs = nOutputs + featInc
 	end
 
-	--print("Size at lowest spatial size ==> ", model:cuda():forward(testInput):size())
+	print("Size at lowest spatial size ==> ", model:cuda():forward(torch.rand(1,3,params.inH,params.inW):cuda()):size())
+	
 
 	for i = 1, params.nUp do 
 

@@ -58,7 +58,6 @@ function loadData:getNextBatch(trainOrTest)
 	local path
 	local counter = 1
 	local x, y, inW, inH 
-	local dsFactor = params.dsFactor
 	local inW, inH = params.inW, params.inH 
 
 	if trainOrTest == "train" then
@@ -88,7 +87,6 @@ function loadData:getNextBatch(trainOrTest)
 				path = self.pathsToFit[self.idx]
 				names[#names + 1] = path
 				x = image.loadJPG(path)
-				inW, inH = self.xDims[3]/dsFactor, self.xDims[2]/dsFactor
 				x = image.scale(x,inW,inH,"bilinear"):resize(1,3,inH,inW)
 				table.insert(X, x)
 				if self.idx == #self.pathsToFit then self.finishedTest = 1 else; self.idx = self.idx + 1 end

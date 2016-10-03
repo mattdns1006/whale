@@ -9,17 +9,19 @@ loadData.__index = loadData
 
 pathsToFit = {}
 
-dir = "../imgs"
-for d in paths.iterdirs(dir) do
-	local d = dir .. "/" .. d .. "/"
-	if params.toFitLevel == 1 then  
-		strMatch = "w"..tostring(params.toFitLevel).."S"
-	else 
-		strMatch = "w"..tostring(params.toFitLevel)
-	end
-	for f in paths.files(d,strMatch) do
-		f = d .. f
-		pathsToFit[#pathsToFit + 1] = f
+if params then
+	dir = "../imgs"
+	for d in paths.iterdirs(dir) do
+		local d = dir .. "/" .. d .. "/"
+		if params.toFitLevel == 1 then  
+			strMatch = "w"..tostring(params.toFitLevel).."S"
+		else 
+			strMatch = "w"..tostring(params.toFitLevel)
+		end
+		for f in paths.files(d,strMatch) do
+			f = d .. f
+			pathsToFit[#pathsToFit + 1] = f
+		end
 	end
 end
 
@@ -52,6 +54,8 @@ function loadData.init(tid,nThreads,batchSize)
 	return setmetatable(self,loadData)
 end
 
+
+
 function loadData:getNextBatch(trainOrTest)
 	local X = {}
 	local Y = {}
@@ -63,13 +67,17 @@ function loadData:getNextBatch(trainOrTest)
 	if trainOrTest == "train" then
 		while true do
 			path = self.xPaths[self.idx]
+
 			x = image.loadPNG("augmented/"..path)
+			y = image.loadPNG("augmented/"..path:gsub("x_","y_"))
+			x,y = augment(x,y)
 
 			x = image.scale(x,inW,inH,"bilinear"):resize(1,3,inH,inW)
-			table.insert(X, x)
-			y = image.loadPNG("augmented/"..path:gsub("x_","y_"))
 			y = image.scale(y,params.outW,params.outH,"bilinear"):resize(1,3,params.outH,params.outW)
+
+			table.insert(X, x)
 			table.insert(Y,y) 
+
 			if self.idx == #self.xPaths then self.idx = 1; self.epoch = self.epoch + 1; self.xPaths = shuffle(self.xPaths); else self.idx = self.idx + 1 end
 			if counter == self.bs then break else counter = counter + 1 end
 		end
@@ -100,10 +108,63 @@ function loadData:getNextBatch(trainOrTest)
 	end
 end
 
+function augment(x,y)
+
+	local randomRotate = torch.uniform(-100,100)
+	local x = image.rotate(x,randomRotate)
+	local y = image.rotate(y,randomRotate)
+
+	local c,h,w = x:size(1), x:size(2), x:size(3)
+	local ar = w/h
+	local y = image.scale(y,w,h,"bilinear") -- make sure same size before cropping
+
+	local maxCrop = torch.floor(0.2*w)
+	local xCrop = torch.random(3,maxCrop)
+	local yCrop = torch.floor(xCrop/ar)
+
+	local x = x:narrow(3,xCrop,w-xCrop-1)
+	local x = x:narrow(2,yCrop,h-yCrop-1)
+
+	local y = y:narrow(3,xCrop,w-xCrop-1)
+	local y = y:narrow(2,yCrop,h-yCrop-1)
+
+	
+	return x,y
+end
+
+-- Testing 
+
+function img()
+	if imgDisplay == nil then 
+		local initPic = torch.range(1,torch.pow(100,2),1):reshape(100,100)
+		imgDisplay0 = image.display{image=initPic, zoom=zoom, offscreen=false}
+	end
+end
+
+function testAugment()
+	xPaths = {}
+	for f in paths.files("augmented/","x_") do 
+		xPaths[#xPaths + 1] = f
+	end
+	img()
+	for i =1, 1000 do 
+		path = xPaths[1]
+		x = image.loadPNG("augmented/"..path)
+		y = image.loadPNG("augmented/"..path:gsub("x_","y_"))
+		x,y = augment(x,y)
+		o = torch.cat(x,y)
+		image.display{image = o, win = imgDisplay0} 
+		sys.sleep(0.2)
+
+	end
+end
+
 function testLoadData()
+	img()
+
 	bs = 10
 	nThreads = 1
-	dofile("/Users/matt/torchFunctions/shuffle.lua")
+	dofile("/home/msmith/misc/torchFunctions/shuffle.lua")
 	params = {}
 	params.outW = 40
 	params.outH = 32
@@ -111,7 +172,7 @@ function testLoadData()
 	eg2 = loadData.init(2,nThreads,bs)
 	for i = 1, 5 do 
 		eg1:getNextBatch()
-		image.display(eg1.X)
+		image.display{image = o, win = imgDisplay0, title = dstName} 
 		sys.sleep(0.2)
 		print(i,eg1.idx,#eg1.xPaths,eg1.epoch)
 	end

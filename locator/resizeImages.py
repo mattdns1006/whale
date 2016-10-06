@@ -1,6 +1,7 @@
 import os, glob
 from PIL import Image
 from tqdm import tqdm
+import cv2
 
 
 def getSize(desiredWidth=600):
@@ -27,15 +28,15 @@ def resizeImages(labeledOrOriginal,desiredSize=(500,333),replaceCurrent = False)
         imgPath = imgPaths[i]
         dst = imgPath.replace(s+"_",s+"S_")
         if os.path.exists(dst) == False or replaceCurrent == True:
-            img = Image.open(imgPath)
-            img = img.resize(desiredSize,Image.ANTIALIAS)
-            img.save(dst)
+            img = cv2.imread(imgPath)
+            img = cv2.resize(img,desiredSize,interpolation = cv2.INTER_LINEAR)
+            cv2.imwrite(dst,img)
             count += 1
     print ("Added %d more resized images " % count)
 
 
 if __name__ == "__main__":
-    desiredSize = getSize(desiredWidth=600)
+    desiredSize = getSize(desiredWidth=900)
     replaceCurrent = True
     resizeImages("w1",desiredSize=desiredSize,replaceCurrent=replaceCurrent) # downscale originals
     resizeImages("l",desiredSize=desiredSize,replaceCurrent=replaceCurrent) # downscale truth labels

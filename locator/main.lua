@@ -27,11 +27,11 @@ cmd:option("-actualTest",0,"Acutal test predictions.")
 cmd:option("-inW",400,"Input size")
 cmd:option("-inH",300,"Input size")
 cmd:option("-sf",0.7,"Scaling factor.")
-cmd:option("-nFeats",16,"Number of features.")
-cmd:option("-featInc",32,"Number of features increasing.")
+cmd:option("-nFeats",32,"Number of features.")
+cmd:option("-featInc",0,"Number of features increasing.")
 cmd:option("-kernelSize",3,"Kernel size.")
 
-cmd:option("-bs",3,"Batch size.")
+cmd:option("-bs",5,"Batch size.")
 cmd:option("-lr",0.0001,"Learning rate.")
 cmd:option("-lrDecay",1.1,"Learning rate change factor.")
 cmd:option("-lrChange",10000,"How often to change lr.")
@@ -48,11 +48,10 @@ cmd:option("-run",1,"Run.")
 cmd:option("-modelSave",5000,"Model save frequency.")
 cmd:option("-toFitLevel",1,"Fitting (test mode) which level eg. 1 2 or 3.")
 cmd:option("-test",0,"Test mode.")
-cmd:option("-saveTest",0,"Save test.")
+cmd:option("-testSave",0,"Save test.")
 
 cmd:option("-nDown",4,"Number of down steps.")
 cmd:option("-nUp",1,"Number of up steps.")
-cmd:option("-dsFactor",2,"Reduce image by factor.")
 
 cmd:option("-outH",14,"Number of down steps.")
 cmd:option("-outW",20,"Number of up steps.")
@@ -62,9 +61,11 @@ params = cmd:parse(arg)
 models = require "models"
 optimState = {learningRate = params.lr, beta1 = 0.9, beta2 = 0.999, epsilon = 1e-8 }
 optimMethod = optim.adam
+logger = optim.Logger("model.log")
+
 
 print("Model name ==>")
-modelName = "deconv3.model"
+modelName = "deconv4.model"
 if params.loadModel == 1 then
 	print("==> Loading model")
 	model = torch.load(modelName):cuda()
@@ -77,6 +78,12 @@ print("Output size ==> ", outSize)
 params.outH = outSize[3]
 params.outW = outSize[4]
 criterion = nn.MSECriterion():cuda()
+
+logger:add(params)
+
+
+dofile("loadData.lua")
+feed = loadData.init(1,1,1)
 
 function run()
 	print("==> Init threads")
@@ -96,66 +103,64 @@ function run()
 					return X,Y
 			       end,
 			       function(X,Y)
-				       local outputs, dstPath
-					if params.test == 1 then
-						model:evaluate()
-						outputs = model:forward(X)
-						for i = 1, outputs:size(1) do 
-							dstPath = Y[i]:gsub("w_","lf_")
-							image.saveJPG(dstPath,outputs[i])
-						end
-						i = i + 1 
-						if i % 50 == 0 then 
-							xlua.progress(i,12007)
-						end
-						--display(X,Y,outputs,"test",3,10)
 
-					else 
-					       model:training()
-					       outputs, loss = train(X,Y)
-					       dScore = diceScore(outputs,Y)
-					       display(X,Y,outputs,"train",4,5) 
-					       i = i + 1
-					       table.insert(losses, loss)
-					       table.insert(dScores, dScore)
-					       if i % 400 ==0 then
-						       local lT =  torch.Tensor(losses)
-						       local dST =  torch.Tensor(dScores)
+					-- Running test views
 
-						       print(string.format("Mean loss and dice score = %f , %f. \n",lT:mean(),dST:mean()))
-						       losses = {}
-						       dScores = {}
-						       --local t  =  torch.range(1,#losses)
-						       --gnuplot.plot({t,lT},{t,dST})
-						        --collectgarbage()
+				       if i % 50 == 0 then 
+						if params.display == 1 then
+							if testDisplay == nil then 
+								local initPic = torch.range(1,torch.pow(100,2),1):reshape(100,100)
+								test1 = image.display{image=initPic, zoom=zoom, offscreen=false}
+								test2 = image.display{image=initPic, zoom=zoom, offscreen=false}
+								testDisplay = 1
+							end
+							x,name = feed:getNextBatch("test")
+							model:evaluate()
+							o = model:forward(x):squeeze()
+							image.display{image = x, win = test1, title = name} 
+							image.display{image = o, win = test2, title = name} 
 						end
-						xlua.progress(i,params.nIter)
+					end
 
-						if i % params.lrChange == 0 then
-							local clr = params.lr
-							params.lr = params.lr/params.lrDecay
-							print(string.format("Learning rate dropping from %f ====== > %f. ",clr,params.lr))
-							learningRate = params.lr
-						end
-						if i % params.modelSave == 0 then
-							print("==> Saving model " .. modelName .. ".")
-							torch.save(modelName,model)
-						end
+				       model:training()
+				       outputs, loss = train(X,Y)
+				       dScore = diceScore(outputs,Y)
+				       display(X,Y,outputs,"train",4,5) 
 
-					  end
-					  collectgarbage()
+				       table.insert(losses, loss)
+				       table.insert(dScores, dScore)
+
+				       if i % 400 ==0 then
+					       -- Print moving average scores for training set
+					       local lT =  torch.Tensor(losses)
+					       local dST =  torch.Tensor(dScores)
+					       print(string.format("Mean loss and dice score = %f , %f. \n",lT:mean(),dST:mean()))
+					       losses = {}
+					       dScores = {}
+					end
+
+
+					if i % params.lrChange == 0 then
+						local clr = params.lr
+						params.lr = params.lr/params.lrDecay
+						print(string.format("Learning rate dropping from %f ====== > %f. ",clr,params.lr))
+						learningRate = params.lr
+					end
+					if i % params.modelSave == 0 then print("==> Saving model " .. modelName .. ".") torch.save(modelName,model) end
+
+				        i = i + 1
+					xlua.progress(i,params.nIter)
+
+					collectgarbage()
 				      
 			       end
 			     )
 	end
 end
 
-if params.run == 1 and params.test ==0 then run() end
+function fitMasks()
 
-if params.test == 1 then
-	dofile("loadData.lua")
-	feed = loadData.init(1,1,1)
-	timer = torch.Timer()
+	model:evaluate()
 
 	if params.display == 1 then
 		if imgDisplay == nil then 
@@ -163,26 +168,31 @@ if params.test == 1 then
 			imgDisplay0 = image.display{image=initPic, zoom=zoom, offscreen=false}
 		end
 	end
-	assert(#pathsToFit <= 11468,"Number to fit /< 11468")
+
 	for i = 1, #pathsToFit do 
 		x,name = feed:getNextBatch("test")
+		dstName = name[1]:gsub(strMatch,"m"..tostring(level)) -- m for mask!
 		o = model:forward(x):squeeze()
+		image.display{image = o, win = imgDisplay0, title = dstName} 
 		o = image.scale(o:double(),params.inW,params.inH)
 
 		level = params.toFitLevel
-		dstName = name[1]:gsub(strMatch,"m"..tostring(level)) -- m for mask!
 
-		image.save(dstName,o)
-
-
+		if params.testSave == 1 then image.save(dstName,o) end
+		if params.display == 1 then 
+			image.display{image = o, win = imgDisplay0, title = dstName} 
+			sys.sleep(1)
+		end
+		
 		if i % 25 == 0 then 
 			xlua.progress(i,#pathsToFit)
-			
 			print(level,name[1],dstName)
 		end
+
 		collectgarbage()
 	end
-	print(string.format("Time taken = %f seconds ", timer:time().real))
-
 end
+
+if params.run == 1 and params.test ==0 then run() end
+if params.test == 1 then fitMasks() end
 

@@ -8,8 +8,15 @@ loadData = {}
 loadData.__index = loadData
 
 pathsToFit = {}
+testToFit = {} --Just actual test set
 
 if params then
+	dir = "../imgs/test"
+	for f in paths.files(dir,("w"..tostring(params.toFitLevel).."S")) do 
+		f = dir .."/".. f
+		testToFit[#testToFit+ 1] = f
+	end
+
 	dir = "../imgs"
 	for d in paths.iterdirs(dir) do
 		local d = dir .. "/" .. d .. "/"
@@ -32,6 +39,7 @@ function loadData.init(tid,nThreads,batchSize)
 	self.epoch = 1
 	self.xPaths = {}
 	self.pathsToFit = {}
+	self.testToFit = {}
 	self.finishedTest = 0
 	self.idx = 1 --Starting point
 
@@ -48,7 +56,11 @@ function loadData.init(tid,nThreads,batchSize)
 		self.pathsToFit[#self.pathsToFit + 1] = pathsToFit[i]
 	end
 
-	self.xDims = image.loadPNG("augmented/"..self.xPaths[1]):size() -- Dimensions of x
+	for i = self.tid, #testToFit , nThreads do 
+		self.testToFit[#self.testToFit + 1] = testToFit[i]
+	end
+
+	self.xDims = image.loadJPG("augmented/"..self.xPaths[1]):size() -- Dimensions of x
 	self.xPaths = shuffle(self.xPaths)
 
 	return setmetatable(self,loadData)
@@ -68,11 +80,13 @@ function loadData:getNextBatch(trainOrTest)
 		while true do
 			path = self.xPaths[self.idx]
 
-			x = image.loadPNG("augmented/"..path)
-			y = image.loadPNG("augmented/"..path:gsub("x_","y_"))
-			x,y = augment(x,y)
+			x = image.loadJPG("augmented/"..path)
+			x:csub(x:mean())
 
+			y = image.loadJPG("augmented/"..path:gsub("x_","y_"))
+			x,y = augment(x,y)
 			x = image.scale(x,inW,inH,"bilinear"):resize(1,3,inH,inW)
+
 			y = image.scale(y,params.outW,params.outH,"bilinear"):resize(1,3,params.outH,params.outW)
 
 			table.insert(X, x)
@@ -92,12 +106,15 @@ function loadData:getNextBatch(trainOrTest)
 		else 
 			local names = {}
 			while true do
-				path = self.pathsToFit[self.idx]
+				d = self.testToFit -- change to testToFit or pathsToFit
+				path = d[self.idx]
 				names[#names + 1] = path
 				x = image.loadJPG(path)
+				x:csub(x:mean())
 				x = image.scale(x,inW,inH,"bilinear"):resize(1,3,inH,inW)
+
 				table.insert(X, x)
-				if self.idx == #self.pathsToFit then self.finishedTest = 1 else; self.idx = self.idx + 1 end
+				if self.idx == #d then self.finishedTest = 1 else; self.idx = self.idx + 1 end
 				if counter == self.bs then break else counter = counter + 1 end
 			end
 
@@ -110,15 +127,17 @@ end
 
 function augment(x,y)
 
-	local randomRotate = torch.uniform(-100,100)
-	local x = image.rotate(x,randomRotate)
-	local y = image.rotate(y,randomRotate)
+	--[[
+	local randomRotate = torch.uniform(-5,5)
+	local x = image.rotate(x,randomRotate,"bilinear")
+	local y = image.rotate(y,randomRotate,"bilinear")
+	]]--
 
 	local c,h,w = x:size(1), x:size(2), x:size(3)
 	local ar = w/h
 	local y = image.scale(y,w,h,"bilinear") -- make sure same size before cropping
 
-	local maxCrop = torch.floor(0.2*w)
+	local maxCrop = torch.floor(0.1*w)
 	local xCrop = torch.random(3,maxCrop)
 	local yCrop = torch.floor(xCrop/ar)
 
@@ -166,12 +185,14 @@ function testLoadData()
 	nThreads = 1
 	dofile("/home/msmith/misc/torchFunctions/shuffle.lua")
 	params = {}
+	params.inW = 320
+	params.inH = 200
 	params.outW = 40
 	params.outH = 32
 	eg1 = loadData.init(1,nThreads,bs)
 	eg2 = loadData.init(2,nThreads,bs)
 	for i = 1, 5 do 
-		eg1:getNextBatch()
+		x, o = eg1:getNextBatch("train")
 		image.display{image = o, win = imgDisplay0, title = dstName} 
 		sys.sleep(0.2)
 		print(i,eg1.idx,#eg1.xPaths,eg1.epoch)

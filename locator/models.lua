@@ -59,7 +59,7 @@ end
 function models.model1() 
 	local model = nn.Sequential()
 	local featInc = params.featInc 
-	local nInputs =  16 
+	local nInputs =  params.nFeats
 	local nOutputs = nInputs + featInc
 
 	for i = 1, params.nDown do
@@ -67,13 +67,15 @@ function models.model1()
 		model:add(Convolution(nInputs,nOutputs,3,3,1,1,1,1))
 		model:add(SBN(nOutputs))
 		model:add(af())
-		--model:add(nn.Dropout(0.1))
+
 		--[[
+		model:add(nn.Dropout(0.1))
 		model:add(Convolution(nOutputs,nOutputs,3,3,1,1,1,1))
 		model:add(SBN(nOutputs))
 		model:add(af())
+		
 		]]--
-		model:add(Pool(3,3,2,2,1,1))
+		model:add(Pool(2,2,2,2,0,0))
 		
 		nInputs = nOutputs
 		nOutputs = nOutputs + featInc
@@ -89,7 +91,7 @@ function models.model1()
 		model:add(af())
 		model:add(UpSample(2))
 		nInputs = nOutputs
-		nOutputs = nOutputs - featInc 
+		--nOutputs = nOutputs - featInc 
 	end
 
 

@@ -3,7 +3,7 @@ from PIL import Image
 from tqdm import tqdm
 
 
-def getSize(desiredWidth=500):
+def getSize(desiredWidth=600):
     # To keep aspect ratio the same
     imgPaths = glob.glob("../imgs/*/w1_*")
     labelled = glob.glob("../imgs/*/l_*")
@@ -35,7 +35,7 @@ def resizeImages(labeledOrOriginal,desiredSize=(500,333),replaceCurrent = False)
 
 
 if __name__ == "__main__":
-    desiredSize = getSize(desiredWidth=500)
-    replaceCurrent = False
+    desiredSize = getSize(desiredWidth=600)
+    replaceCurrent = True
     resizeImages("w1",desiredSize=desiredSize,replaceCurrent=replaceCurrent) # downscale originals
     resizeImages("l",desiredSize=desiredSize,replaceCurrent=replaceCurrent) # downscale truth labels

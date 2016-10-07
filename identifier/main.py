@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 
 import cv2
-import os, pdb, sys, glob
+import os, ipdb, sys, glob
 from tqdm import tqdm
 
 sys.path.insert(0,"/home/msmith/misc/tfFunctions/")
@@ -13,7 +13,7 @@ from hStackBatch import hStackBatch
 
 from loadData import dataGenerator
 
-bS  = 10 # Batchsize
+bS  = 5 # Batchsize
 
 ## HyperParamter defaults
 h, w, c = 210, 350, 3
@@ -23,6 +23,7 @@ nClasses = pd.read_csv("../trainCV.csv").label.max()
 
 # Variables 
 x = tf.placeholder(tf.float32, shape=[None,h,w,c])
+
 y = tf.placeholder(tf.float32, shape=[None,nClasses])
 keepProb = tf.placeholder(tf.float32)
 
@@ -52,26 +53,31 @@ feats += featsInc
 
 hconv2 = tf.nn.relu(bn(feats,conv2d(hconv1, weights[1]) + biases[1]))
 hconv2 = mp(hconv2,kS=2,stride=2)
+hconv2 = tf.nn.dropout(hconv2,keepProb)
 
 feats += featsInc
 
 hconv3 = tf.nn.relu(bn(feats,conv2d(hconv2, weights[2]) + biases[2]))
 hconv3 = mp(hconv3,kS=2,stride=2)
+hconv3 = tf.nn.dropout(hconv3,keepProb)
 
 feats += featsInc
 
 hconv4 = tf.nn.relu(bn(feats, conv2d(hconv3, weights[3]) + biases[3]))
 hconv4 = mp(hconv4,kS=2,stride=2)
+hconv4 = tf.nn.dropout(hconv4,keepProb)
 
 feats += featsInc
 
 hconv5 = tf.nn.relu(bn(feats,conv2d(hconv4, weights[4]) + biases[4]))
 hconv5 = mp(hconv5,kS=2,stride=2)
+hconv5 = tf.nn.dropout(hconv5,keepProb)
 
 feats += featsInc
 
 hconv6 = tf.nn.relu(bn(feats,conv2d(hconv5, weights[5]) + biases[5]))
 hconv6 = mp(hconv6,kS=2,stride=2)
+hconv6 = tf.nn.dropout(hconv6,keepProb)
 
 sizeBeforeReshape = hconv6.get_shape().as_list()
 
@@ -102,12 +108,29 @@ init = tf.initialize_all_variables()
 load = 0
 display = 1
 if display == 1:
+
     import matplotlib.pyplot as plt
 
-    def displayBatch(X,Y,names):
+    def displayBatch(XY):
+        X,Y = XY
+        names = train.decodeToName(Y)
         bs = X.shape[0]
-
-
+        X = X.astype(np.uint8)
+        fig = plt.figure()
+        nRow = 2
+        x = bs/nRow
+        y = bs/x
+        idx = 0
+        for i in range(x):
+            for j in range(y):
+                ax = fig.add_subplot(x,y,(j+1)*(i+1))
+                ax.set_xticklabels([])
+                ax.set_yticklabels([])
+                plt.imshow(X[idx])
+                ax.set_title(names[idx])
+                idx +=1
+        plt.show()
+        
 with tf.Session() as sess:
     saver = tf.train.Saver()
     sess.run(init)
@@ -115,24 +138,27 @@ with tf.Session() as sess:
     if load == 1:
         saver.restore(sess,"model.chk")
 
-    train = dataGenerator(trainOrTest="train",bS=bS,inputSize=(w,h,c)).generator()
-    test = dataGenerator(trainOrTest="test",bS=bS,inputSize=(w,h,c)).generator()
+    train = dataGenerator(trainOrTest="train",bS=bS,inputSize=(w,h,c))
+    test = dataGenerator(trainOrTest="test",bS=1,inputSize=(w,h,c))
+    trGen = train.generator()
+    teGen = test.generator()
 
     while True:
         maLossesTrain = []
         maLossesTest = []
 
         for i in tqdm(range(200),"training"):
-            X,Y = next(train)
-            pdb.set_trace()
-            _, loss = sess.run([trainStep,cross_entropy], feed_dict={x: X, y: Y, keepProb: 0.5})
+            XY = X,Y = next(trGen)
+
+            #displayBatch(XY)
+            _, loss = sess.run([trainStep,cross_entropy], feed_dict={x: X, y: Y, keepProb: 0.8})
             maLossesTrain.append(loss)
 
         meanLoss = np.array(maLossesTrain).mean()
         print("Mean average loss at {0} = {1}".format(i,meanLoss))
 
         for i in tqdm(range(50),"testing"):
-            X,Y = next(test)
+            XY = X,Y = next(teGen)
             loss = sess.run([cross_entropy], feed_dict={x: X, y: Y, keepProb: 1.0})
             maLossesTest.append(loss)
 

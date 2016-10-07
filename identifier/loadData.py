@@ -1,11 +1,13 @@
-import os
+import os,sys
 import pandas as pd
-import pdb
 import numpy as np
 import matplotlib.pyplot as plt
 from PIL import Image
 from tqdm import tqdm
 import cv2
+import tensorflow as tf
+sys.path.insert(0,"/home/msmith/misc/py/")
+import aug # Augmentation
 
 def oneHotEncode(label,nClasses):
     y = np.zeros(nClasses)
@@ -20,8 +22,10 @@ class dataGenerator():
         assert trainOrTest in ("train","test"), "trainOrTest argument must be 'train' or 'test'"
         if trainOrTest == "train":
             self.csv = pd.read_csv("../trainCV.csv")
+            self.aug = 1
         else:
             self.csv = pd.read_csv("../testCV.csv")
+            self.aug = 0
 
         self.nObs = self.csv.shape[0]
         self.bS = bS #batchSize
@@ -41,11 +45,13 @@ class dataGenerator():
         self.csv.reset_index(drop=1,inplace=1)
 
     def decodeToName(self,ohVector):
-
-        label = oneHotDecode(ohVector)
-        loc = self.whaleLookUp[eg.whaleLookUp.label==label]
-        name = loc.whaleID
-        return name
+	names = list()
+	for i in range(ohVector.shape[0]):
+		label = oneHotDecode(ohVector[i])
+		loc = self.whaleLookUp[self.whaleLookUp.label==label]
+		name = loc.whaleID.values[0][6:] + " ("+str(label)+") "
+		names.append(name)
+        return names
 
     def generator(self):
         self.idx = 0
@@ -58,6 +64,11 @@ class dataGenerator():
                 self.idx +=1
                 x = cv2.imread(path)
                 x = cv2.resize(x,(self.w,self.h),interpolation= cv2.INTER_LINEAR)
+                if self.aug == 1:
+                    x = aug.gamma(x,0.01)
+                    x = aug.rotateScale(x,maxAngle=6,maxScaleStd=0.03)
+                    
+                x = (x - x.mean())/x.std()
                 X[i] = x
                 Y[i] = oneHotEncode(obs.label,self.nClasses)
                 if self.idx == self.nObs:

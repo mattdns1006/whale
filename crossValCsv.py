@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 import numpy.random as rng
 import sys
-import pdb
+import ipdb
 
 # Encode the whale names into 1,2,3 ......, 447
 
@@ -20,18 +20,40 @@ def makeCrossValidationCSVs(ratio,subsetSize=10):
     whaleDictEncode = lambda x: whaleDict.get(x)
     df["label"] = df.whaleID.apply(whaleDictEncode)
     df = df.loc[df["label"]<=subsetSize]
-    pdb.set_trace()
     df.reset_index(drop=1,inplace=1)
     
-    nObs = df.shape[0]
 
-    rIdx = rng.permutation(nObs)
-    df = df.reindex(rIdx)
-    df.reset_index(drop=1,inplace=1)
+    while True:
+        dfC = df.copy()
+        nObs = dfC.shape[0]
+        rIdx = rng.permutation(nObs)
+        dfC = dfC.reindex(rIdx)
+        dfC.reset_index(drop=1,inplace=1)
 
-    df.to_csv("trainEncoded.csv")
-    cutOff = np.floor(nObs*ratio).astype(np.uint16)
-    train,test = df.ix[:cutOff], df.ix[cutOff:]
+        dfC.to_csv("trainEncoded.csv")
+        cutOff = np.floor(nObs*ratio).astype(np.uint16)
+        train,test = dfC.ix[:cutOff], dfC.ix[cutOff:]
+        trCount , teCount = [x.groupby("label").count() for x in [train,test]]
+        trUnique, teUnique = [x.shape[0] for x in [trCount,teCount]]
+
+
+        enoughObsTr, enoughObsTe = [any(x<1) for x in [trCount,teCount]]
+        enoughUniqueTr, enoughUniqueTe = [x==subsetSize for x in [trUnique,teUnique]]
+
+
+        bools = [enoughObsTr,enoughObsTe,enoughUniqueTr,enoughUniqueTe]
+        okay = all(bools)
+
+        if okay == True:
+            print("Class counts for train/test")
+            print(trCount)
+            print("-"*10)
+            print(trUnique)
+            print("*"*10)
+            print(teCount)
+            print("-"*10)
+            print(teUnique)
+            break
     train.to_csv("trainCV.csv")
     test.to_csv("testCV.csv")
     print("Train/test shapes = %s/%s" % (train.shape,test.shape))

@@ -35,6 +35,9 @@ class dataGenerator():
         self.tensorShape = (self.bS,self.h,self.w,self.c)
         self.nClasses = self.csv.label.max()
         self.whaleLookUp = self.csv[["whaleID","label"]].drop_duplicates().sort_values("label").reset_index(drop = 1)
+	self.finishedEpoch = 0
+
+	self.shuffle()
 
     def getPath(self,row):
         return "../imgs/"+ row.whaleID + "/" + row.Image.replace("w_","head_")
@@ -55,18 +58,27 @@ class dataGenerator():
 
     def generator(self):
         self.idx = 0
+	self.finishedEpoch = 0
+
         while True:
             X = np.empty(self.tensorShape).astype(np.float32)
             Y = np.empty((self.bS,self.nClasses)).astype(np.float32)
+	    '''
+	    if self.idx % 20 == 0:
+		    print("{0} out of {1}".format(self.idx,self.nObs))
+		    '''
             for i in range(self.bS):
                 obs = self.csv.loc[self.idx]
                 path = self.getPath(obs)
                 self.idx +=1
+
                 x = cv2.imread(path)
                 x = cv2.resize(x,(self.w,self.h),interpolation= cv2.INTER_LINEAR)
+		'''
                 if self.aug == 1:
                     x = aug.gamma(x,0.01)
                     x = aug.rotateScale(x,maxAngle=6,maxScaleStd=0.03)
+		   '''
                     
                 x = (x - x.mean())/x.std()
                 X[i] = x
@@ -74,6 +86,8 @@ class dataGenerator():
                 if self.idx == self.nObs:
                     self.idx = 0
                     self.shuffle()
+		    self.finishedEpoch = 1
+
             yield X,Y
 
 

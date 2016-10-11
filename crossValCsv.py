@@ -54,6 +54,9 @@ def makeCrossValidationCSVs(ratio,subsetSize=10):
             print("-"*10)
             print(teUnique)
             break
+    gc = train.groupby("label").count()["whaleID"]
+    weights = 1/gc
+    weights.to_csv("trWeights.csv",header=1)
     train.to_csv("trainCV.csv")
     test.to_csv("testCV.csv")
     print("Train/test shapes = %s/%s" % (train.shape,test.shape))

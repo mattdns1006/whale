@@ -16,7 +16,7 @@ cmd:text()
 cmd:text("Options")
 cmd:option("-modelName","identifier1.model","Name of model.")
 cmd:option("-modelSave",5000,"How often to save.")
-cmd:option("-loadModel",1,"Load model.")
+cmd:option("-loadModel",0,"Load model.")
 
 cmd:option("-batchSize",4,"duh")
 cmd:option("-inH",420,"Input size (h).")
@@ -29,7 +29,7 @@ cmd:option("-kS",3,"Kernel size of convolutions.")
 cmd:option("-nDown",7,"Number of blocks.")
 
 cmd:option("-lr",0.0001,"Learning rate.")
-cmd:option("-epochs",10,"N epochs")
+cmd:option("-epochs",20,"N epochs")
 cmd:text()
 
 
@@ -43,37 +43,53 @@ logger:add(params)
 dofile("loadData.lua")
 models = require "models"
 run = require "run"
-criterion = nn.CrossEntropyCriterion():cuda()
-
+criterion = nn.CrossEntropyCriterion(weightsT):cuda()
 
 if params.loadModel == 1 then print("==> Loading model") model = torch.load(modelName):cuda() else model = models.model1():cuda() end
 
 function runTrTe()
 	feed = provider.init(params.batchSize,params.inH,params.inW,params.c)
-	ma = 20
+	cmTr, cmTe = optim.ConfusionMatrix(nClasses), optim.ConfusionMatrix(nClasses)
 
 	for epoch = 1, params.epochs do 
 		trLoss = {} 
 		teLoss = {}
+		cmTr:zero()
+		cmTe:zero()
 		feed.train.finishedEpoch = false
 		feed.test.finishedEpoch = false
 		model:training()
-		local outputs,loss
 		while feed.train.finishedEpoch == false do
 			X,Y = feed:getNextBatch("train")
 			outputs, loss = run.train(X,Y)
+
+			if X:size(1) == 1 then
+				cmTr:add(outputs,Y)
+			else 
+				cmTr:batchAdd(outputs,Y)
+			end
 			table.insert(trLoss,loss)
 		end
 		
 		model:evaluate()
-		local outputs,loss
 		while feed.test.finishedEpoch == false do
 			X,Y = feed:getNextBatch("test")
 			outputs, loss = run.test(X,Y)
+			if X:size(1) == 1 then
+				cmTe:add(outputs,Y)
+			else 
+				cmTe:batchAdd(outputs,Y)
+			end
 			table.insert(teLoss,loss)
 		end
+		print("Train CM")
+		print(cmTr)
+		print("Test CM")
+		print(cmTe)
 		print(string.format("Epoch %d == > Train loss = %f , test loss = %f",epoch,torch.Tensor(trLoss):mean(),torch.Tensor(teLoss):mean()))
 		collectgarbage()
 	end
 end
+
+--runTrTe()
 

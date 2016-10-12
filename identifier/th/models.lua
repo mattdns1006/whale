@@ -21,8 +21,6 @@ function initParamsEg()
 end
 
 
-
-
 function shortcut(nInputPlane, nOutputPlane, stride)
 	return nn.Sequential()
 		:add(Convolution(nInputPlane,nOutputPlane,1,1,stride,stride,0,0))
@@ -63,9 +61,10 @@ function models.model1()
 		model:add(Convolution(nInputs,nOutputs,3,3,1,1,1,1))
 		model:add(SBN(nOutputs))
 		model:add(af())
+		--model:add(nn.Dropout(0.03*i + 0.05))
 
 		--[[
-		model:add(nn.Dropout(0.1))
+
 		model:add(Convolution(nOutputs,nOutputs,3,3,1,1,1,1))
 		model:add(SBN(nOutputs))
 		model:add(af())

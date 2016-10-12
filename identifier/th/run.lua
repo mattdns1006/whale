@@ -9,7 +9,7 @@ function run.train(inputs,targets)
 		print("Number of parameters ==>")
 		print(parameters:size())
 		initModel = true
-
+		norm,sign= torch.norm,torch.sign
 	end
 	
 	function feval(x)
@@ -18,10 +18,11 @@ function run.train(inputs,targets)
 		outputs = model:forward(inputs) -- Only one input for training unlike testing
 		loss = criterion:forward(outputs,targets)
 		dLdO = criterion:backward(outputs,targets)
-		model:backward(inputs,dLdO)
 
+		model:backward(inputs,dLdO)
 		return	loss, gradParameters 
 	end
+
 
 	optimMethod(feval,parameters,optimState)
 
@@ -31,9 +32,9 @@ end
 
 function run.test(inputs,targets)
 
-	local output = model:forward(inputs)
-	local loss = criterion:forward(output,targets)
-	return output, loss
+	local outputs = model:forward(inputs)
+	local loss = criterion:forward(outputs,targets)
+	return outputs, loss
 end
 
 return run

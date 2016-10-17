@@ -67,36 +67,46 @@ def histMatch(img1,img2,plot=0):
     return im1YT
 
 def main(img1,img2): 
+
     ''' Wrapper function given two images we match the hist of the first image to the second for each color channel in YUV'''
+
+    yuv1, yuv2 = [brgToYuv(x) for x in [img1,img2]]
+    dst = np.zeros(yuv1.shape) # Init our final image
+    for chan in range(3): # for YUV
+
+        c1, c2 = [x[:,:,chan] for x in [yuv1, yuv2]]
+
+        dst[:,:,chan] = histMatch(c1,c2)
+        ipdb.set_trace()
+        plt.title(chan)
+        plt.imshow(np.hstack((c1,dst[:,:,chan],c2)),cmap=cm.gray)
+        plt.show()
+
+    dst = yuvToBrg(dst.astype(np.uint8)) ## Convert back to normal
+    return dst
 
 
 if __name__ == "__main__":
     import ipdb
+
+
+    ## Get random whales
     head = glob.glob("../imgs/*/head_*")
-    i,j = np.random.random_integers(0,len(head),2)
+    i,j = np.random.randint(0,len(head),2)
     img1 = cv2.imread(head[i])
     img2 = cv2.imread(head[j])
-    im1, im2 = [brgToYuv(x) for x in [img1,img2]]
-    im1Y, im2Y = [x[:,:,0] for x in [im1, im2]]
+    dst = main(img1,img2) 
 
-    im1YT = histMatch(im1Y,im2Y)
-    x1YT, cdf1YT = cdfImg(im1YT)
-    im1C = im1.copy()
-    im1C[:,:,0] = im1YT
-    img1T = yuvToBrg(im1C)
-
-    plt.subplot(311)
-    plt.title("Im1/Im2 with average pixel values = {0:0.2f}/{1:0.2f}".format(np.mean(im1),np.mean(im2)))
-    plt.imshow(np.hstack((img1,img1T,img2)))
-    plt.subplot(312)
-    plt.title("Y - luminance")
-    plt.imshow(np.hstack((im1Y,im1YT,im2Y)),cmap=cm.gray)
-    plt.subplot(313)
-    x1, im1Cdf = cdfImg(im1Y)
-    x2, im2Cdf = cdfImg(im2Y)
-    plt.plot(x1,im1Cdf,label = ["im1"])
-    plt.plot(x2,im2Cdf,label = ["im2"])
-    plt.plot(x1YT,cdf1YT,label = ["im1X"])
+    plt.subplot(211)
+    plt.title("Im1/Im2 with average pixel values = {0:0.2f}/{1:0.2f}".format(np.mean(img1),np.mean(img2)))
+    plt.imshow(np.hstack((img1,dst,img2)))
+    plt.subplot(212)
+    x1, im1Cdf = cdfImg(img1[:,:,0])
+    x2, im2Cdf = cdfImg(img2[:,:,0])
+    xDst, dstCdf = cdfImg(dst[:,:,0])
+    plt.plot(x1,im1Cdf,label = ["source"])
+    plt.plot(x2,im2Cdf,label = ["target"])
+    plt.plot(xDst,dstCdf,label = ["dest"])
     plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
     plt.show()
 

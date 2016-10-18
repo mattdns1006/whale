@@ -28,7 +28,7 @@ def cdfImg(img):
 
 def findNearest(array,value):
     ''' Finds nearest value in array and returns the value and its index in the array'''
-    idx = (np.abs(array-value)).argmin()
+    idx = (np.abs(array.astype(np.float32)-value)).argmin()
     return array[idx], idx
 
 def histMatch(img1,img2,plot=0):
@@ -47,6 +47,7 @@ def histMatch(img1,img2,plot=0):
         f1g1 = cdf1[x1Nearest] # Find CDF1 of current value
         f2g2, f2g2I = findNearest(cdf2,f1g1) # return index of nearest value in CDF2
         g2 = x2[f2g2I]
+
         mapping[g1] = g2
 
         if g1 % 50 == 0 and plot == 1:
@@ -64,51 +65,56 @@ def histMatch(img1,img2,plot=0):
         plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
         plt.show(block=False)
 
-    return im1YT
+    return im1YT, mapping
 
-def main(img1,img2): 
+def getDst(img1,img2): 
 
     ''' Wrapper function given two images we match the hist of the first image to the second for each color channel in YUV'''
 
     yuv1, yuv2 = [brgToYuv(x) for x in [img1,img2]]
     dst = np.zeros(yuv1.shape) # Init our final image
+    mappings = np.zeros((3,256))
+
     for chan in range(3): # for YUV
 
+        
         c1, c2 = [x[:,:,chan] for x in [yuv1, yuv2]]
-
-        dst[:,:,chan] = histMatch(c1,c2)
-        ipdb.set_trace()
-        plt.title(chan)
-        plt.imshow(np.hstack((c1,dst[:,:,chan],c2)),cmap=cm.gray)
-        plt.show()
+        dst[:,:,chan], mappings[chan] = histMatch(c1,c2)
 
     dst = yuvToBrg(dst.astype(np.uint8)) ## Convert back to normal
-    return dst
+    return dst, mappings
 
 
 if __name__ == "__main__":
     import ipdb
 
 
+    np.random.seed(1006)
     ## Get random whales
     head = glob.glob("../imgs/*/head_*")
-    i,j = np.random.randint(0,len(head),2)
-    img1 = cv2.imread(head[i])
-    img2 = cv2.imread(head[j])
-    dst = main(img1,img2) 
+    while True:
+        i,j = np.random.randint(0,len(head),2)
+        img1 = cv2.imread(head[i])
+        img2 = cv2.imread(head[j])
+        dst,mappings = getDst(img1,img2) 
 
-    plt.subplot(211)
-    plt.title("Im1/Im2 with average pixel values = {0:0.2f}/{1:0.2f}".format(np.mean(img1),np.mean(img2)))
-    plt.imshow(np.hstack((img1,dst,img2)))
-    plt.subplot(212)
-    x1, im1Cdf = cdfImg(img1[:,:,0])
-    x2, im2Cdf = cdfImg(img2[:,:,0])
-    xDst, dstCdf = cdfImg(dst[:,:,0])
-    plt.plot(x1,im1Cdf,label = ["source"])
-    plt.plot(x2,im2Cdf,label = ["target"])
-    plt.plot(xDst,dstCdf,label = ["dest"])
-    plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
-    plt.show()
+        plt.subplot(311)
+        plt.title("Im1/Im2 with average pixel values = {0:0.2f}/{1:0.2f}".format(np.mean(img1),np.mean(img2)))
+        plt.imshow(np.hstack((img1,dst,img2)))
+        plt.subplot(312)
+        x1, im1Cdf = cdfImg(img1[:,:,0])
+        x2, im2Cdf = cdfImg(img2[:,:,0])
+        xDst, dstCdf = cdfImg(dst[:,:,0])
+        plt.plot(x1,im1Cdf,label = ["source"])
+        plt.plot(x2,im2Cdf,label = ["target"])
+        plt.plot(xDst,dstCdf,label = ["dest"])
+        plt.subplot(313)
+        for i in range(3):
+            plt.plot(np.arange(mappings[i].shape[0]),mappings[i],label = ["mapping" + str(i)])
+
+        plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
+        plt.show()
+
 
 
 

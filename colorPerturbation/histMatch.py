@@ -84,6 +84,11 @@ def getDst(img1,img2):
     dst = yuvToBrg(dst.astype(np.uint8)) ## Convert back to normal
     return dst, mappings
 
+def fitMapping(img,mapping):
+    yuv = brgToYuv(img) 
+    yuv[:,:,0] = mapping[yuv[:,:,0]].astype(np.uint8) # so far only Y channel
+    dst = yuvToBrg(yuv.astype(np.uint8)) ## Convert back to normal
+    return dst 
 
 if __name__ == "__main__":
     import ipdb

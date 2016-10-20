@@ -54,20 +54,18 @@ function models.model1()
 	local model = nn.Sequential()
 	local nInputs =  params.nFeats
 	local featInc = params.nFeatsInc
-	local nOutputs = nInputs + featInc
+	local nOutputs = nInputs*2
 
 	for i = 1, params.nDown do
 		if i == 1 then nInputs = 3 end
 		model:add(Convolution(nInputs,nOutputs,3,3,1,1,1,1))
 		model:add(SBN(nOutputs))
 		model:add(af())
-		--model:add(nn.Dropout(0.03*i + 0.05))
-
-		--[[
-
+		model:add(nn.Dropout(0.25))
 		model:add(Convolution(nOutputs,nOutputs,3,3,1,1,1,1))
 		model:add(SBN(nOutputs))
 		model:add(af())
+		--[[
 		
 		]]--
 		model:add(Pool(2,2,2,2,0,0))
@@ -80,7 +78,10 @@ function models.model1()
 	print("Size at lowest spatial size ==> ", size)
 	local featsReshape = size[2]*size[3]*size[4]
 	model:add(nn.View(featsReshape))
-	model:add(nn.Linear(featsReshape,nClasses))
+	model:add(nn.Linear(featsReshape,512))
+	model:add(nn.Dropout(0.5))
+	model:add(af())
+	model:add(nn.Linear(512,nClasses))
 
 	layers.init(model)
 	return model

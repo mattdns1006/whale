@@ -28,7 +28,7 @@ cmd:option("-inW",900,"Input size")
 cmd:option("-inH",600,"Input size")
 cmd:option("-sf",0.7,"Scaling factor.")
 cmd:option("-nFeats",32,"Number of features.")
-cmd:option("-featInc",32,"Number of features increasing.")
+cmd:option("-featInc",0,"Number of features increasing.")
 cmd:option("-kernelSize",3,"Kernel size.")
 
 cmd:option("-bs",3,"Batch size.")
@@ -65,7 +65,7 @@ logger = optim.Logger("model.log")
 
 
 print("Model name ==>")
-modelName = "deconv4.model"
+modelName = "deconv5.model"
 if params.loadModel == 1 then
 	print("==> Loading model")
 	model = torch.load(modelName):cuda()
@@ -73,6 +73,7 @@ else
 	model = models.model1():cuda()
 end
 testInput = torch.randn(1,3,params.inH,params.inW):cuda()
+
 outSize = model:forward(testInput):size()
 print("Output size ==> ", outSize)
 params.outH = outSize[3]
@@ -94,9 +95,8 @@ function run()
 
 	while i < params.nIter do
 		donkeys:addjob(function()
-				        if params.test == 1 then 
+					if params.test == 1 then 
 						X, names = dataFeed:getNextBatch("test")
-						Y = names
 					else 
 						X, Y = dataFeed:getNextBatch("train")
 					end
@@ -105,8 +105,7 @@ function run()
 			       function(X,Y)
 
 					-- Running test views
-
-				       if i % 50 == 0 then 
+				       if i % 1 == 0 then 
 						if params.display == 1 then
 							if testDisplay == nil then 
 								local initPic = torch.range(1,torch.pow(100,2),1):reshape(100,100)
@@ -114,6 +113,7 @@ function run()
 								test2 = image.display{image=initPic, zoom=zoom, offscreen=false}
 								testDisplay = 1
 							end
+							
 							x,name = feed:getNextBatch("test")
 							model:evaluate()
 							o = model:forward(x):squeeze()
@@ -158,41 +158,8 @@ function run()
 	end
 end
 
-function fitMasks()
+--dstName = name[1]:gsub(strMatch,"m"..tostring(level)) -- m for mask!
+	if params.display == 1 then if imgDisplay == nil then local initPic = torch.range(1,torch.pow(100,2),1):reshape(100,100) imgDisplay0 = image.display{image=initPic, zoom=zoom, offscreen=false} end end
 
-	model:evaluate()
-
-	if params.display == 1 then
-		if imgDisplay == nil then 
-			local initPic = torch.range(1,torch.pow(100,2),1):reshape(100,100)
-			imgDisplay0 = image.display{image=initPic, zoom=zoom, offscreen=false}
-		end
-	end
-
-	for i = 1, #pathsToFit do 
-		x,name = feed:getNextBatch("test")
-		dstName = name[1]:gsub(strMatch,"m"..tostring(level)) -- m for mask!
-		o = model:forward(x):squeeze()
-		image.display{image = o, win = imgDisplay0, title = dstName} 
-		o = image.scale(o:double(),params.inW,params.inH)
-
-		level = params.toFitLevel
-
-		if params.testSave == 1 then image.save(dstName,o) end
-		if params.display == 1 then 
-			image.display{image = o, win = imgDisplay0, title = dstName} 
-			sys.sleep(1)
-		end
-		
-		if i % 25 == 0 then 
-			xlua.progress(i,#pathsToFit)
-			print(level,name[1],dstName)
-		end
-
-		collectgarbage()
-	end
-end
-
-if params.run == 1 and params.test ==0 then run() end
-if params.test == 1 then fitMasks() end
+if params.run == 1 then run() end
 

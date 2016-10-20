@@ -28,6 +28,7 @@ cmd:option("-nFeatsInc",16,"Number of features increasing.")
 cmd:option("-kS",3,"Kernel size of convolutions.")
 cmd:option("-nDown",7,"Number of blocks.")
 
+cmd:option("-run",1,"Run.")
 cmd:option("-lr",0.0001,"Learning rate.")
 cmd:option("-epochs",20,"N epochs")
 cmd:text()
@@ -82,14 +83,17 @@ function runTrTe()
 			end
 			table.insert(teLoss,loss)
 		end
+		print(string.rep("---",30))
 		print("Train CM")
 		print(cmTr)
+		print(string.rep("---",30))
 		print("Test CM")
 		print(cmTe)
+		print(string.rep("---",30))
 		print(string.format("Epoch %d == > Train loss = %f , test loss = %f",epoch,torch.Tensor(trLoss):mean(),torch.Tensor(teLoss):mean()))
 		collectgarbage()
 	end
 end
 
---runTrTe()
+if params.run == 1 then runTrTe() end
 

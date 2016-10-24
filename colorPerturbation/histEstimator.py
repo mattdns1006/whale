@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm
 from random import shuffle
 from tensorflow.contrib.layers import batch_norm as bn
+from feeder import feeder
 
 def nWeights(trainableVars):
     from operator import mul
@@ -27,49 +28,7 @@ def plotBatch(batch):
 		plt.plot(batch[i])
 	plt.show(block=False)
 
-def feeder(bS):
-    fileNames = glob.glob("../imgs/*/head*")
-    n = len(fileNames)
-    nPoints = 256
-    X = np.arange(nPoints).astype(np.float32)
-    
-    # Add padding on each side of array to help extremes of fn be learned
-    X /= 255.0 
-    c1, c2 = np.random.choice(n,2)
-    img1, img2 = cv2.imread(fileNames[c1]),cv2.imread(fileNames[c2])
-    _, mapping = histMatch.histMatch(img1,img2)
 
-    Y = mapping.astype(np.float32)# Thing we want to learn x = 0,1,...,255 y = cdf(x)
-    Y /= 255.0
-    XY = np.vstack((X,Y))
-    rand = np.random.permutation(256)
-    XY = XY[:,rand].astype(np.float32)
-
-    frm = 0 
-    to = frm+bS
-    maxIdx = XY.shape[1]
-    reset = 0
-    while True:
-
-        x, y = XY[:,frm:to]
-
-        
-        frm = to
-        if to + bS >= maxIdx and reset == 1:
-            frm = 0
-            to = frm + bS 
-        elif to + bS >= maxIdx:
-            frm = to
-            to = maxIdx
-            reset = 1
-        else:
-            frm = to
-            to += bS
-            reset = 0
-
-        x, y = XY
-        x, y = [np.expand_dims(arr,1) for arr in [x,y]]
-	yield x,y
 
 def placeHolder(bS):
 	x = tf.placeholder(tf.float32,shape=(None,1))

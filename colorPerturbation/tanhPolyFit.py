@@ -1,7 +1,6 @@
 import numpy as np
 import pandas as pd
 from feeder import feeder
-import ipdb
 import os,glob
 from tqdm import tqdm
 from scipy.interpolate import UnivariateSpline as spline
@@ -10,10 +9,10 @@ from scipy.optimize import curve_fit
 def mse(yPred,y):
 	return np.square(y-yPred).mean()
 
-def tanh(x,a,b,c,d,e,f,g,h):
-	return a*np.tanh((x-b)/c) + d + e*np.arctanh((x-f)/g)  + h*x**3
+def tanh(x,a,b,c,d,e,f,g):
+	return a*np.tanh((x-b)/c) + d + e*np.arctanh((x-f)/g) 
 
-def fitPoly(x,y,order,model="spline",saveFig=False,name="name"):
+def fit(x,y,order,model="spline",saveFig=False,name="name"):
 	if model == "poly":
 		coeffs = np.polyfit(x,y,deg=order)
 		model = np.poly1d(coeffs)
@@ -23,10 +22,11 @@ def fitPoly(x,y,order,model="spline",saveFig=False,name="name"):
 	elif model == "tanh":
 		x[np.where(x<=0)] = 0.001
 		x[np.where(x>=1)] = 1 - 0.001
-		p0 = [0.4,0.4,0.13,0.52,0.03,0.00,1.2,0.2]
-		coeffs, cov = curve_fit(tanh,x,y,p0=p0,maxfev=20000)
+		p0 = [0.4,0.4,0.13,0.52,0.03,0.00,1.2]
+                b = 1e7 # bounds
+		coeffs, cov = curve_fit(tanh,x,y,p0=p0,maxfev=100000)
 
-		model = lambda x: tanh(x,coeffs[0],coeffs[1],coeffs[2],coeffs[3],coeffs[4],coeffs[5],coeffs[6],coeffs[7]) #  coeffs[4],coeffs[5],coeffs[6],coeffs[7])
+		model = lambda x: tanh(x,coeffs[0],coeffs[1],coeffs[2],coeffs[3],coeffs[4],coeffs[5],coeffs[6]) #  coeffs[4],coeffs[5],coeffs[6],coeffs[7])
 				
 
 	yPred = model(x)
@@ -56,7 +56,7 @@ if __name__ == "__main__":
 		print("Fitting {0} polynomials of size {1}".format(nFits,order))
 
 	elif modelType == "tanh":
-		order = 8 # number of params
+		order = 7 # number of params
 
 	coeffs = np.zeros((nFits,order))
 	plots = glob.glob("plots/*.png")
@@ -73,15 +73,15 @@ if __name__ == "__main__":
 		else:
 			saveFig = False
 		try:
-			coeffs[i], losses[i] = fitPoly(x=x,y=y,model=modelType,order=order,saveFig=saveFig,name=i)
+			coeffs[i], losses[i] = fit(x=x,y=y,model=modelType,order=order,saveFig=saveFig,name=i)
 		except RuntimeError:
 			couldntFit += 1
 			print("Run time error for {0}".format(couldntFit))
-	pd.DataFrame(coeffs).to_csv("weights/poly{0}Weights.csv".format(order),index=0)
-	ipdb.set_trace()
+	pd.DataFrame(coeffs).to_csv("weights/{0}_weights.csv".format(modelType),index=0)
 
 	losses = losses[~np.isnan(losses)]
 	print("Average loss = {0}".format(losses.mean()))
+
 
 
 

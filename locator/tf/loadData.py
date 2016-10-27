@@ -31,23 +31,23 @@ def feed(inDims, outDims, paths):
 			Y[i] = normalize(y)
 
 			pathIdx += 1
-			if pathIdx > nObs:
+			if pathIdx >= nObs:
 				pathIdx = 0 
 				shuffle(paths)
+
 
 		yield X, Y
 
 
 if __name__ == "__main__": 
 	import sys, ipdb, glob
+        import matplotlib.pyplot as plt
 
-	show = lambda tensor: plt.imshow(hStackBatch(tensor)); plt.show()
 
 	paths = glob.glob("../augmented/x_*")
 	feeder = feed(inDims = [4,600,900,3], outDims = [4,10,15,3], paths = paths)
 	while True:
 		X,Y = feeder.next()
-		show(X)
 
 
 

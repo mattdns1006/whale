@@ -10,7 +10,7 @@ def normalize(img):
 
 def feed(inDims, outDims, paths):
 	
-	paths = paths
+        paths = paths
 	nObs = len(paths)
 	X = np.zeros(inDims).astype(np.float32)
 	Y = np.zeros(outDims).astype(np.float32)

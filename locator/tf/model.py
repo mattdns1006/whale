@@ -53,13 +53,12 @@ def model(x):
 
     #hConv5 = mp(hConv5,2,2)
     #hConv6 = bn(conv(hConv5,W[5]) + B[5],is_training=True)
-
     
+    i = 1
+    print("Model dims")
     for layer in [x,hConv1,hConv2,hConv3,hConv4,hConv5,yPred]:
-	    print(getShape(layer))
-
-
-
+	    print("Layer {0} = ".format(i),getShape(layer))
+            i+=1
 
     return yPred 
 

@@ -1,4 +1,4 @@
-import cv2, sys
+import cv2, sys, os
 import pandas as pd
 import numpy as np
 from random import shuffle
@@ -16,27 +16,36 @@ def feed(inDims, outDims, paths):
 	Y = np.zeros(outDims).astype(np.float32)
 	batchSize = inDims[0]
 	pathIdx = 0
+	shuffle(paths)
+        finished = 0
 
 	while True:
 
 		for i in range(batchSize):
 			path = paths[pathIdx]
 			x = cv2.imread(path)
-			y = cv2.imread(path.replace("x_","y_"))
-
 			x = cv2.resize(x,(inDims[2],inDims[1]),interpolation=cv2.INTER_LINEAR)
-			y = cv2.resize(y,(outDims[2],outDims[1]),interpolation=cv2.INTER_LINEAR)
+
+                        if os.path.exists(path.replace("x_","y_")):
+			    y = cv2.imread(path.replace("x_","y_"))
+			    y = cv2.resize(y,(outDims[2],outDims[1]),interpolation=cv2.INTER_LINEAR)
+			    Y[i] = normalize(y)
+                        else:
+                            y = np.zeros((outDims[2],outDims[1],outDims[0])).fill(255)
 
 			X[i] = normalize(x)
 			Y[i] = normalize(y)
 
+
 			pathIdx += 1
 			if pathIdx >= nObs:
 				pathIdx = 0 
-				shuffle(paths)
+                                finished = 1
 
-
-		yield X, Y
+                        if pathIdx % 1000 == 0:
+                            print("{0} of {1}".format(pathIdx,nObs))
+                                    
+                yield X, Y, finished
 
 
 if __name__ == "__main__": 
@@ -44,10 +53,10 @@ if __name__ == "__main__":
         import matplotlib.pyplot as plt
 
 
-	paths = glob.glob("../augmented/x_*")
+	paths = glob.glob("../augmented/test/x_*")
 	feeder = feed(inDims = [4,600,900,3], outDims = [4,10,15,3], paths = paths)
-	while True:
-		X,Y = feeder.next()
+	for i in xrange(300):
+		X,Y,fin = feeder.next()
 
 
 

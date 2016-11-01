@@ -34,7 +34,7 @@ def model(x):
         B[i] = layers.biasVar([feats])
 
         nIn = feats
-        feats += 32 
+        feats += 64 
 
     hConv1 = af(bn((conv(x,W[0]) + B[0]),is_training=True))
     hConv1 = mp(hConv1,3,2)

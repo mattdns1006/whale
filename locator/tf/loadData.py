@@ -2,6 +2,8 @@ import cv2, sys, os
 import pandas as pd
 import numpy as np
 from random import shuffle
+sys.path.append("/home/msmith/misc/histMatch/")
+from histMatch import histMatchAllChannels
 
 def normalize(img):
 	img = img.astype(np.uint8)
@@ -18,6 +20,7 @@ def feed(inDims, outDims, paths):
 	pathIdx = 0
 	shuffle(paths)
         finished = 0
+        baseMatchImage = cv2.imread("../augmented/train/x_0.jpg")
 
 	while True:
 
@@ -25,6 +28,7 @@ def feed(inDims, outDims, paths):
 			path = paths[pathIdx]
 			x = cv2.imread(path)
 			x = cv2.resize(x,(inDims[2],inDims[1]),interpolation=cv2.INTER_LINEAR)
+                        x, _ = histMatchAllChannels(x,baseMatchImage)
 
                         if os.path.exists(path.replace("x_","y_")):
 			    y = cv2.imread(path.replace("x_","y_"))

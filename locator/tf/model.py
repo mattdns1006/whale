@@ -22,8 +22,8 @@ def model(x):
     # Input = 900 x 600 x 3
     W= {}
     B = {}
-    feats = 32 
-    nLayers = 5
+    feats = 48 
+    nLayers = 6
 
     for i in range(nLayers):
         if i == 0:
@@ -49,14 +49,15 @@ def model(x):
     hConv4 = mp(hConv4,3,2)
 
     hConv5 = bn(conv(hConv4,W[4]) + B[4],is_training=True)
-    yPred = tf.nn.sigmoid(hConv5)
+    hConv5 = mp(hConv5,2,2)
 
-    #hConv5 = mp(hConv5,2,2)
-    #hConv6 = bn(conv(hConv5,W[5]) + B[5],is_training=True)
+    hConv6 = bn(conv(hConv5,W[5]) + B[5],is_training=True)
+
+    yPred = tf.nn.sigmoid(hConv6)
     
     i = 1
     print("Model dims")
-    for layer in [x,hConv1,hConv2,hConv3,hConv4,hConv5,yPred]:
+    for layer in [x,hConv1,hConv2,hConv3,hConv4,hConv5,hConv6,yPred]:
 	    print("Layer {0} = ".format(i),getShape(layer))
             i+=1
 

@@ -20,7 +20,7 @@ def feed(inDims, outDims, paths):
 	pathIdx = 0
 	shuffle(paths)
         finished = 0
-        baseMatchImage = cv2.imread("../augmented/train/x_0.jpg")
+        baseMatchImage = cv2.imread("../augmented/histMatchBase/x_165.jpg")
 
 	while True:
 

@@ -10,7 +10,7 @@ def normalize(img):
 	img = img/255.0
 	return img
 
-def feed(inDims, outDims, paths):
+def feed(inDims, outDims, paths, matchingImg = "x_0"):
 	
         paths = paths
 	nObs = len(paths)
@@ -20,7 +20,7 @@ def feed(inDims, outDims, paths):
 	pathIdx = 0
 	shuffle(paths)
         finished = 0
-        baseMatchImage = cv2.imread("../augmented/histMatchBase/x_165.jpg")
+        baseMatchImage = cv2.imread("../augmented/histMatchBase/{0}.jpg".format(matchingImg))
 
 	while True:
 

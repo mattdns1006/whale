@@ -12,7 +12,7 @@ def placeholderX(batchSize=None,dims=(600,900,3),nDown=6):
     return x
 
 
-def model(x):
+def model(x,nFeatsInc=64):
     conv = layers.conv2d
     af = tf.nn.relu
     af = tf.tanh
@@ -34,7 +34,7 @@ def model(x):
         B[i] = layers.biasVar([feats])
 
         nIn = feats
-        feats += 64 
+        feats += nFeatsInc 
 
     hConv1 = af(bn((conv(x,W[0]) + B[0]),is_training=True))
     hConv1 = mp(hConv1,3,2)
@@ -69,9 +69,9 @@ def getShape(tensor):
 def aug(x):
     return tf.image.random_contrast(x,0.6,1.3)
 
-def main(batchSize=None,dims=(600,900,3),nDown=6):
+def main(nFeatsInc = 64, batchSize=None,dims=(600,900,3),nDown=6):
     x = placeholderX(batchSize,dims,nDown)
-    yPred = model(x)
+    yPred = model(x,nFeatsInc)
     oW, oH, oC = getShape(yPred)[1:]
     y = tf.placeholder(tf.float32,shape = [None,oW,oH,oC])
     return x, y,yPred

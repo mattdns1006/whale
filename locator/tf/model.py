@@ -11,7 +11,6 @@ def placeholderX(batchSize=None,dims=(600,900,3),nDown=6):
     x = tf.placeholder(tf.float32,shape = [batchSize,w,h,c])
     return x
 
-
 def model(x,nFeatsInc=64):
     conv = layers.conv2d
     af = tf.nn.relu

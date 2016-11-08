@@ -30,7 +30,7 @@ def feed(inDims, outDims, paths, matchingImg = "x_0"):
                         imgPaths.append(path)
 			x = cv2.imread(path)
 			x = cv2.resize(x,(inDims[2],inDims[1]),interpolation=cv2.INTER_LINEAR)
-                        x, _ = histMatchAllChannels(x,baseMatchImage)
+                        #x, _ = histMatchAllChannels(x,baseMatchImage)
 
                         if os.path.exists(path.replace("x_","y_")):
 			    y = cv2.imread(path.replace("x_","y_"))

@@ -17,7 +17,7 @@ def aug():
     newWidth, newHeight = 900,600
     labels = glob.glob("../imgs/*/lS_*")
     nImgs = len(labels)
-    nAug = 20 
+    nAug = 30 
     print("{0} labels to be augmented {1} times to size {2}.".format(nImgs,nAug,(newWidth,newHeight)))
     nTrain = int(0.8*nImgs)*nAug
     nTest = int(0.2*nImgs)*nAug

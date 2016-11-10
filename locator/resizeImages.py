@@ -37,6 +37,6 @@ def resizeImages(labeledOrOriginal,desiredSize=(500,333),replaceCurrent = False)
 
 if __name__ == "__main__":
     desiredSize = getSize(desiredWidth=900)
-    replaceCurrent = True
+    replaceCurrent = False 
     #resizeImages("w1",desiredSize=desiredSize,replaceCurrent=replaceCurrent) # downscale originals
     resizeImages("l",desiredSize=desiredSize,replaceCurrent=replaceCurrent) # downscale truth labels

@@ -21,10 +21,12 @@ def aug():
     print("{0} labels to be augmented {1} times to size {2}.".format(nImgs,nAug,(newWidth,newHeight)))
     nTrain = int(0.8*nImgs)*nAug
     nTest = int(0.2*nImgs)*nAug
+    print("Number of unique labels = train/test = {0}/{1}".format(nTrain/nAug,nTest/nAug))
     print("First {0} will be training, rest {1} testing".format(nTrain,nTest))
 
     if not os.path.exists("augmented/train"):
         os.makedirs("augmented/train")
+        os.makedirs("augmented/testAugmented")
         os.makedirs("augmented/test")
 
     imgNo = 0
@@ -40,34 +42,41 @@ def aug():
         
         for i in tqdm(range(nAug)[:],desc=""):
 
-            
-            start = time.time()
-            angle = np.random.uniform(-20,20)
-            scale = np.random.normal(1.0,0.1)
             imgX_, r_ = imgX.copy(), r.copy()
+            if i > 0:
 
-            # Augment Y (YUV) here
+                start = time.time()
+                angle = np.random.uniform(-20,20)
+                scale = np.random.normal(1.0,0.1)
 
-            #mapping = (cdfAug(mvn.rvs(1),np.linspace(0,1,256))*255).astype(np.uint32).clip(0,255)
-            #imgX_ = histMatch.fitMapping(imgX_,mapping)
 
-            shiftX, shiftY, _ = np.random.normal(0,30,3)
+                # Augment Y (YUV) here
 
-            M = cv2.getRotationMatrix2D((newWidth/2,newHeight/2),angle,scale=scale)
-            M[0,1] += np.random.normal(0,0.2)
-            
-            M[0,2] = shiftX
-            M[1,2] = shiftY
-            if np.random.uniform() < 0.5:
-                imgX_,r_ = [cv2.flip(img,1) for img in [imgX_,r_]]
+                #mapping = (cdfAug(mvn.rvs(1),np.linspace(0,1,256))*255).astype(np.uint32).clip(0,255)
+                #imgX_ = histMatch.fitMapping(imgX_,mapping)
 
-            if np.random.uniform() < 0.5:
-                imgX_,r_ = [cv2.flip(img,0) for img in [imgX_,r_]]
+                shiftX, shiftY, _ = np.random.normal(0,30,3)
 
-            imgX_, r_ = [cv2.warpAffine(img,M,(newWidth,newHeight),borderMode = 0,flags=cv2.INTER_CUBIC) for img in [imgX_,r_]]
+                M = cv2.getRotationMatrix2D((newWidth/2,newHeight/2),angle,scale=scale)
+                M[0,1] += np.random.normal(0,0.2)
+                
+                M[0,2] = shiftX
+                M[1,2] = shiftY
+                if np.random.uniform() < 0.5:
+                    imgX_,r_ = [cv2.flip(img,1) for img in [imgX_,r_]]
 
-            if imgNo > nTrain:
-                path = "augmented/test/"
+                if np.random.uniform() < 0.5:
+                    imgX_,r_ = [cv2.flip(img,0) for img in [imgX_,r_]]
+
+                imgX_, r_ = [cv2.warpAffine(img,M,(newWidth,newHeight),borderMode = 0,flags=cv2.INTER_CUBIC) for img in [imgX_,r_]]
+
+            if imgNo >= nTrain:
+                if i == 0:
+                    path = "augmented/test/"
+
+                else:
+                    path = "augmented/testAugmented/"
+
             else:
                 path = "augmented/train/"
 
@@ -82,7 +91,7 @@ if __name__ == "__main__":
         if delete in ("y","n"):
             break
     if delete == "y":
-        #removeFiles("augmented/",check=1)
+        removeFiles("augmented/testAugmented/",check=0)
         removeFiles("augmented/train/",check=0)
         removeFiles("augmented/test/",check=0)
 

@@ -4,13 +4,32 @@ import numpy as np
 from random import shuffle
 sys.path.append("/home/msmith/misc/histMatch/")
 from histMatch import histMatchAllChannels
+import matplotlib.pyplot as plt
 
 def normalize(img):
 	img = img.astype(np.uint8)
 	img = img/255.0
 	return img
 
-def feed(inDims, outDims, paths, matchingImg = "x_0"):
+def feedVideo(inDims,filePath,matchingImg="x_1"):
+
+        baseMatchImage = cv2.imread("/home/msmith/kaggle/whale/locator/augmented/histMatchBase/{0}.jpg".format(matchingImg))
+        cap = cv2.VideoCapture(filePath)
+        while not cap.isOpened():
+            cap = cv2.VideoCapture(filePath)
+            cv2.waitKey(1000)
+
+        posFrame = cap.get(cv2.cv.CV_CAP_PROP_POS_FRAMES)
+        while True:
+            flag, frame = cap.read()
+            x = cv2.resize(frame,(inDims[2],inDims[1]),interpolation=cv2.INTER_LINEAR)
+            orig = x.copy()
+            x, _ = histMatchAllChannels(x,baseMatchImage)
+            x = normalize(x)
+	    x = np.expand_dims(x,0) 
+            yield x,orig
+
+def feed(inDims, outDims, paths, matchingImg = "x_1"):
 	
         paths = paths
 	nObs = len(paths)
@@ -30,7 +49,7 @@ def feed(inDims, outDims, paths, matchingImg = "x_0"):
                         imgPaths.append(path)
 			x = cv2.imread(path)
 			x = cv2.resize(x,(inDims[2],inDims[1]),interpolation=cv2.INTER_LINEAR)
-                        #x, _ = histMatchAllChannels(x,baseMatchImage)
+                        x, _ = histMatchAllChannels(x,baseMatchImage)
 
                         if os.path.exists(path.replace("x_","y_")):
 			    y = cv2.imread(path.replace("x_","y_"))

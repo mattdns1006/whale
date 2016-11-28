@@ -33,6 +33,7 @@ def feed(inDims, outDims, paths, matchingImg = "x_1", histMatch = 1):
 	
         paths = paths
 	nObs = len(paths)
+	originals = np.zeros(inDims).astype(np.float32)
 	X = np.zeros(inDims).astype(np.float32)
 	Y = np.zeros(outDims).astype(np.float32)
 	batchSize = inDims[0]
@@ -48,6 +49,7 @@ def feed(inDims, outDims, paths, matchingImg = "x_1", histMatch = 1):
 			path = paths[pathIdx]
                         imgPaths.append(path)
 			x = cv2.imread(path)
+                        originals[i] = x
 			x = cv2.resize(x,(inDims[2],inDims[1]),interpolation=cv2.INTER_LINEAR)
                         if histMatch == 1:
                             x, _ = histMatchAllChannels(x,baseMatchImage)
@@ -65,13 +67,14 @@ def feed(inDims, outDims, paths, matchingImg = "x_1", histMatch = 1):
 
 			pathIdx += 1
 			if pathIdx >= nObs:
+
 				pathIdx = 0 
                                 finished = 1
 
                         if pathIdx % 1000 == 0:
                             print("{0} of {1}".format(pathIdx,nObs))
                                     
-                yield X, Y, finished, imgPaths
+                yield X, Y, finished, imgPaths, originals
 
 
 if __name__ == "__main__": 

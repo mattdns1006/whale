@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from PIL import Image
 from tqdm import tqdm
-import cv2
+import cv2,ipdb
 import tensorflow as tf
 sys.path.insert(0,"/home/msmith/misc/py/")
 import aug # Augmentation
@@ -72,21 +72,16 @@ class dataGenerator():
                 path = self.getPath(obs)
                 self.idx +=1
 
-                x = cv2.imread(path)
-                x = cv2.resize(x,(self.w,self.h),interpolation= cv2.INTER_LINEAR)
-		'''
-                if self.aug == 1:
-                    x = aug.gamma(x,0.01)
-                    x = aug.rotateScale(x,maxAngle=6,maxScaleStd=0.03)
-		   '''
-                    
-                x = (x - x.mean())/x.std()
-                X[i] = x
-                Y[i] = oneHotEncode(obs.label,self.nClasses)
-                if self.idx == self.nObs:
-                    self.idx = 0
-                    self.shuffle()
-		    self.finishedEpoch = 1
+		if os.path.exists(path):
+			x = cv2.imread(path)
+			x = cv2.resize(x,(self.w,self.h),interpolation= cv2.INTER_LINEAR).astype(np.float32)
+			x /= 255.0
+			X[i] = x
+			Y[i] = oneHotEncode(obs.label,self.nClasses)
+			if self.idx == self.nObs:
+			    self.idx = 0
+			    self.shuffle()
+			    self.finishedEpoch = 1
 
             yield X,Y
 

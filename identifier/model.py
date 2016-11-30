@@ -7,12 +7,12 @@ from tensorflow.contrib.layers import layers as tfLayers
 bn = tfLayers.batch_norm
 af = tf.nn.relu
 
-def model1(x,inDims,nClasses):
+def model1(x,inDims,nClasses,nFeatsInit,nFeatsInc):
 	bs, h, w, c = inDims
 	weights = {}
 	biases = {}
-	feats = 32 
-	featsInc = 32 
+	feats = nFeatsInit
+	featsInc = nFeatsInc 
 	kS = 3
 
 	for i in range(8):
@@ -67,18 +67,13 @@ def model1(x,inDims,nClasses):
 
 	flatten = tf.reshape(hconv7, [-1, nFeats])
 
-	nLin = 512
+	nLin = nClasses
 	wLin1 = weightVar([nFeats,nLin])
 	bLin1 = biasVar([nLin])
-	fc1 = af(bn(((tf.matmul(flatten,wLin1) + bLin1)),is_training=True))
+	yPred = tf.matmul(flatten,wLin1) + bLin1
+        yPred = bn(yPred)
 
-	wLin2 = weightVar([nLin,nClasses])
-	bLin2 = biasVar([nClasses])
-
-	yPred = tf.nn.softmax(tf.matmul(fc1,wLin2) + bLin2)
-	yPred = tf.clip_by_value(yPred,1e-10,1.0)
-
-	for l in [x, hconv1,hconv2,hconv3,hconv4,hconv5,hconv6,hconv7,flatten,fc1,yPred]:
+	for l in [x, hconv1,hconv2,hconv3,hconv4,hconv5,hconv6,hconv7,flatten,yPred]:
 	    print(l.get_shape())
 
 	return yPred

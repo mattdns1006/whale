@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from PIL import Image
 from tqdm import tqdm
-import cv2,ipdb
+import cv2
 import tensorflow as tf
 sys.path.insert(0,"/home/msmith/misc/py/")
 import aug # Augmentation
@@ -16,6 +16,9 @@ def oneHotEncode(label,nClasses):
 
 def oneHotDecode(ohVector):
     return ohVector.argmax() + 1
+
+def checkExistsDf(df):
+    pass
 
 class dataGenerator():
     def __init__(self,trainOrTest,bS,inputSize=(300,300,3)):
@@ -68,20 +71,23 @@ class dataGenerator():
 		    print("{0} out of {1}".format(self.idx,self.nObs))
 		    '''
             for i in range(self.bS):
-                obs = self.csv.loc[self.idx]
-                path = self.getPath(obs)
-                self.idx +=1
 
-		if os.path.exists(path):
-			x = cv2.imread(path)
-			x = cv2.resize(x,(self.w,self.h),interpolation= cv2.INTER_LINEAR).astype(np.float32)
-			x /= 255.0
-			X[i] = x
-			Y[i] = oneHotEncode(obs.label,self.nClasses)
-			if self.idx == self.nObs:
-			    self.idx = 0
-			    self.shuffle()
-			    self.finishedEpoch = 1
+                while True:
+                    obs = self.csv.loc[self.idx]
+                    path = self.getPath(obs)
+                    self.idx +=1
+
+                    if os.path.exists(path) == True:
+                            x = cv2.imread(path)
+                            x = cv2.resize(x,(self.w,self.h),interpolation= cv2.INTER_LINEAR).astype(np.float32)
+                            x /= 255.0
+                            X[i] = x
+                            Y[i] = oneHotEncode(obs.label,self.nClasses)
+                            if self.idx == self.nObs:
+                                self.idx = 0
+                                self.shuffle()
+                                self.finishedEpoch = 1
+                            break
 
             yield X,Y
 

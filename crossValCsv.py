@@ -7,7 +7,7 @@ import ipdb
 # Encode the whale names into 1,2,3 ......, 447
 
 # Fn will generate train and test cross validation set from train.csv
-def makeCrossValidationCSVs(ratio,subsetSize=10):
+def makeCrossValidationCSVs(ratio):
     rng.seed(100689)
     df = pd.read_csv("train.csv")
     df = df.sort_values("whaleID")
@@ -19,8 +19,9 @@ def makeCrossValidationCSVs(ratio,subsetSize=10):
     whaleDict = {v: k+1 for k, v in whaleDict.items()}
     whaleDictEncode = lambda x: whaleDict.get(x)
     df["label"] = df.whaleID.apply(whaleDictEncode)
-    df = df.loc[df["label"]<=subsetSize]
-    df.reset_index(drop=1,inplace=1)
+    def subset():
+        df = df.loc[df["label"]<=subsetSize]
+        df.reset_index(drop=1,inplace=1)
     
 
     while True:
@@ -33,6 +34,7 @@ def makeCrossValidationCSVs(ratio,subsetSize=10):
         dfC.to_csv("trainEncoded.csv")
         cutOff = np.floor(nObs*ratio).astype(np.uint16)
         train,test = dfC.ix[:cutOff], dfC.ix[cutOff:]
+        break
         trCount , teCount = [x.groupby("label").count() for x in [train,test]]
         trUnique, teUnique = [x.shape[0] for x in [trCount,teCount]]
 

@@ -13,6 +13,8 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from scipy import stats
 
+def augSingle(img,nAug):
+
 def aug():
     newWidth, newHeight = 900,600
     labels = glob.glob("../imgs/*/lS_*")
@@ -48,12 +50,6 @@ def aug():
                 start = time.time()
                 angle = np.random.uniform(-20,20)
                 scale = np.random.normal(1.0,0.1)
-
-
-                # Augment Y (YUV) here
-
-                #mapping = (cdfAug(mvn.rvs(1),np.linspace(0,1,256))*255).astype(np.uint32).clip(0,255)
-                #imgX_ = histMatch.fitMapping(imgX_,mapping)
 
                 shiftX, shiftY, _ = np.random.normal(0,30,3)
 

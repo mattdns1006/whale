@@ -5,24 +5,29 @@ import sys,os
 import ipdb, cv2
 from tqdm import tqdm 
 def checkSize(df):
+        df = df.copy()
 
 	os.chdir("imgs/")
 	nObs = df.shape[0]
-	count = 0
+        indicesToDrop = []
 	for i in tqdm(range(nObs)):
+
 		try:
-			obs = df.iloc[i].fullPath
+			obs = df.ix[i].fullPath
 
 			if os.path.exists(obs):
 				img = cv2.imread(obs)
 				
 				if img.shape != (600,800,3):
-					df = df[df.fullPath!=obs]
-					count += 1
+                                        indicesToDrop.append(i)
 					print(obs,img.shape)
 		except IndexError:
 			pass
 
+        count = len(indicesToDrop)
+        ipdb.set_trace()
+        df.drop(indicesToDrop,inplace=1)
+        df.reset_index(inplace=1,drop=1)
 	print("Removed {0} files.".format(count))
 	return df
 
@@ -45,14 +50,13 @@ def makeCrossValidationCSVs(ratio):
     df["label"] = df.whaleID.apply(whaleDictEncode)
     df["fullPath"] = df.apply(getFP,1)
     df.drop(["Image","whaleID"],axis=1,inplace=1)
-    df = checkSize(df)
+    dfCleaned = checkSize(df)
     def subset():
         df = df.loc[df["label"]<=subsetSize]
         df.reset_index(drop=1,inplace=1)
-    
 
     while True:
-        dfC = df.copy()
+        dfC = dfCleaned.copy()
         nObs = dfC.shape[0]
         rIdx = rng.permutation(nObs)
         dfC = dfC.reindex(rIdx)
@@ -87,9 +91,9 @@ def makeCrossValidationCSVs(ratio):
 	    gc = train.groupby("label").count()["whaleID"]
 	    weights = 1/gc
 	    weights.to_csv("trWeights.csv",header=1)
-    train.to_csv("trainCV.csv")
-    test.to_csv("testCV.csv")
-    ipdb.set_trace()
+    os.chdir("../")
+    train.to_csv("trainCV.csv",index=0)
+    test.to_csv("testCV.csv",index=0)
     print("Train/test shapes = %s/%s" % (train.shape,test.shape))
 
 if __name__ == "__main__":

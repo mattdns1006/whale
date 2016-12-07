@@ -6,16 +6,16 @@ import ipdb, cv2
 from tqdm import tqdm 
 def checkSize(df):
         df = df.copy()
-
 	os.chdir("imgs/")
 	nObs = df.shape[0]
         indicesToDrop = []
 	for i in tqdm(range(nObs)):
-
 		try:
 			obs = df.ix[i].fullPath
-
-			if os.path.exists(obs):
+			if os.path.exists(obs) == False:
+                                indicesToDrop.append(i)
+				print("{0} not found.".format(obs))
+                        else:
 				img = cv2.imread(obs)
 				
 				if img.shape != (600,800,3):

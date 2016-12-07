@@ -1,10 +1,34 @@
 import pandas as pd
 import numpy as np
 import numpy.random as rng
-import sys
-import ipdb
+import sys,os
+import ipdb, cv2
+from tqdm import tqdm 
+def checkSize(df):
+
+	os.chdir("imgs/")
+	nObs = df.shape[0]
+	count = 0
+	for i in tqdm(range(nObs)):
+		try:
+			obs = df.iloc[i].fullPath
+
+			if os.path.exists(obs):
+				img = cv2.imread(obs)
+				
+				if img.shape != (600,800,3):
+					df = df[df.fullPath!=obs]
+					count += 1
+					print(obs,img.shape)
+		except IndexError:
+			pass
+
+	print("Removed {0} files.".format(count))
+	return df
 
 # Encode the whale names into 1,2,3 ......, 447
+def getFP(row):
+	return "../imgs/"+ row.whaleID + "/" + row.Image.replace("w_","head_ss_")
 
 # Fn will generate train and test cross validation set from train.csv
 def makeCrossValidationCSVs(ratio):
@@ -19,6 +43,9 @@ def makeCrossValidationCSVs(ratio):
     whaleDict = {v: k+1 for k, v in whaleDict.items()}
     whaleDictEncode = lambda x: whaleDict.get(x)
     df["label"] = df.whaleID.apply(whaleDictEncode)
+    df["fullPath"] = df.apply(getFP,1)
+    df.drop(["Image","whaleID"],axis=1,inplace=1)
+    df = checkSize(df)
     def subset():
         df = df.loc[df["label"]<=subsetSize]
         df.reset_index(drop=1,inplace=1)
@@ -32,12 +59,12 @@ def makeCrossValidationCSVs(ratio):
         dfC.reset_index(drop=1,inplace=1)
 
         dfC.to_csv("trainEncoded.csv")
+
         cutOff = np.floor(nObs*ratio).astype(np.uint16)
         train,test = dfC.ix[:cutOff], dfC.ix[cutOff:]
         break
         trCount , teCount = [x.groupby("label").count() for x in [train,test]]
         trUnique, teUnique = [x.shape[0] for x in [trCount,teCount]]
-
 
         enoughObsTr, enoughObsTe = [any(x<1) for x in [trCount,teCount]]
         enoughUniqueTr, enoughUniqueTe = [x==subsetSize for x in [trUnique,teUnique]]
@@ -56,11 +83,13 @@ def makeCrossValidationCSVs(ratio):
             print("-"*10)
             print(teUnique)
             break
-    gc = train.groupby("label").count()["whaleID"]
-    weights = 1/gc
-    weights.to_csv("trWeights.csv",header=1)
+    def weight():
+	    gc = train.groupby("label").count()["whaleID"]
+	    weights = 1/gc
+	    weights.to_csv("trWeights.csv",header=1)
     train.to_csv("trainCV.csv")
     test.to_csv("testCV.csv")
+    ipdb.set_trace()
     print("Train/test shapes = %s/%s" % (train.shape,test.shape))
 
 if __name__ == "__main__":

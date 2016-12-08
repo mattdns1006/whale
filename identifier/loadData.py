@@ -15,17 +15,7 @@ def oneHot(idx,nClasses=447):
     oh = tf.sparse_to_dense(idx,output_shape = [nClasses], sparse_values = 1.0)
     return oh
 
-if __name__ == "__main__":
-
-
-    # Decode csv
-    csvPath = "/home/msmith/kaggle/whale/trainCV.csv"
-    df = pd.read_csv(csvPath)
-
-    #csvPath = "/home/msmith/kaggle/whale/identifier/trainCV10.csv"
-    print(df.head())
-    print(df.shape)
-
+def readCsv(csvPath):
     csvQ = tf.train.string_input_producer([csvPath])
     reader = tf.TextLineReader(skip_header_lines=1)
     k, v = reader.read(csvQ)
@@ -34,18 +24,20 @@ if __name__ == "__main__":
                 tf.constant([], dtype = tf.string)]
                 
     label, path = tf.decode_csv(v,record_defaults=defaults)
+    return path, label
 
+def loadData(csvPath,batchSize=10,batchCapacity=40,nThreads=16): 
+    path, label = readCsv(csvPath)
     labelOh = oneHot(idx=label)
-    label = tf.reshape(label,[1])
     pathRe = tf.reshape(path,[1])
 
     # Define subgraph to take filename, read filename, decode and enqueue
     image_bytes = tf.read_file(path)
     decoded_img = tf.image.decode_jpeg(image_bytes)
-    imageQ = tf.FIFOQueue(128,[tf.uint8,tf.int32,tf.float32,tf.string], shapes = [[600,800,3],[1],[447],[1]])
-    enQ_op = imageQ.enqueue([decoded_img,label,labelOh,pathRe])
+    imageQ = tf.FIFOQueue(128,[tf.uint8,tf.float32,tf.string], shapes = [[600,800,3],[447],[1]])
+    enQ_op = imageQ.enqueue([decoded_img,labelOh,pathRe])
 
-    NUM_THREADS = 16
+    NUM_THREADS = nThreads
     Q = tf.train.QueueRunner(
             imageQ,
             [enQ_op]*NUM_THREADS,
@@ -54,9 +46,17 @@ if __name__ == "__main__":
             )
 
     tf.train.add_queue_runner(Q)
-    bS = 4
     dQ = imageQ.dequeue()
-    X, Ylab, Y, paths = tf.train.batch(dQ, batch_size = 10, capacity = 40)
+    X, Y, Ypaths = tf.train.batch(dQ, batch_size = batchSize, capacity = batchCapacity)
+    return X, Y, Ypaths
+
+if __name__ == "__main__":
+
+    # Decode csv
+    csvPathTr = "/home/msmith/kaggle/whale/trainCV.csv"
+    csvPathTe = "/home/msmith/kaggle/whale/testCV.csv"
+    Xtr, Ytr, YtrPaths = loadData(csvPathTr)
+    Xte, Yte, YtePaths = loadData(csvPathTe)
 
     init_op = tf.initialize_all_variables()
 
@@ -67,11 +67,17 @@ if __name__ == "__main__":
 
         count = 0
         for i in xrange(10):
-            x_, y_, yIdx_, paths_ = sess.run([X,Y,Ylab,paths])
-            show(x_,paths_)
+            x_, y_, Ypaths_ = sess.run([Xtr, Ytr, YtrPaths])
+            show(x_,Ypaths_)
             count += x_.shape[0]
             print(count)
 
+        count = 0
+        for i in xrange(10):
+            x_, y_, Ypaths_ = sess.run([Xte, Yte, YtePaths])
+            show(x_,Ypaths_)
+            count += x_.shape[0]
+            print(count)
 
 
 

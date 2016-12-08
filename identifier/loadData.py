@@ -1,99 +1,74 @@
-import os,sys
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-from PIL import Image
-from tqdm import tqdm
-import cv2
 import tensorflow as tf
-sys.path.insert(0,"/home/msmith/misc/py/")
-import aug # Augmentation
+import ipdb
+import pandas as pd
+import os
+import matplotlib.pyplot as plt
 
-def oneHotEncode(label,nClasses):
-    y = np.zeros(nClasses)
-    y[label - 1] = 1
-    return y
+def show(X,Y="none"):
+    bs, h, w, c = X.shape 
+    X = X.reshape(bs*h,w,c)[:,:,::-1]
+    plt.imshow(X)
+    plt.title(Y)
+    plt.show()
 
-def oneHotDecode(ohVector):
-    return ohVector.argmax() + 1
-
-def checkExistsDf(df):
-    pass
-
-class dataGenerator():
-    def __init__(self,trainOrTest,bS,inputSize=(300,300,3)):
-        assert trainOrTest in ("train","test"), "trainOrTest argument must be 'train' or 'test'"
-        if trainOrTest == "train":
-            self.csv = pd.read_csv("../trainCV.csv")
-            self.aug = 1
-        else:
-            self.csv = pd.read_csv("../testCV.csv")
-            self.aug = 0
-
-        self.nObs = self.csv.shape[0]
-        self.bS = bS #batchSize
-        assert len(inputSize) == 3, "Image must be dim 3"
-        self.inputSize = inputSize
-        self.w,self.h,self.c = self.inputSize
-        self.tensorShape = (self.bS,self.h,self.w,self.c)
-        self.nClasses = self.csv.label.max()
-        self.whaleLookUp = self.csv[["whaleID","label"]].drop_duplicates().sort_values("label").reset_index(drop = 1)
-	self.finishedEpoch = 0
-
-	self.shuffle()
-
-    def getPath(self,row):
-        return "../imgs/"+ row.whaleID + "/" + row.Image.replace("w_","head_")
-
-    def shuffle(self):
-        rIdx = np.random.permutation(self.nObs)
-        self.csv = self.csv.reindex(rIdx)
-        self.csv.reset_index(drop=1,inplace=1)
-
-    def decodeToName(self,ohVector):
-	names = list()
-	for i in range(ohVector.shape[0]):
-		label = oneHotDecode(ohVector[i])
-		loc = self.whaleLookUp[self.whaleLookUp.label==label]
-		name = loc.whaleID.values[0][6:] + " ("+str(label)+") "
-		names.append(name)
-        return names
-
-    def generator(self):
-        self.idx = 0
-	self.finishedEpoch = 0
-
-        while True:
-            X = np.empty(self.tensorShape).astype(np.float32)
-            Y = np.empty((self.bS,self.nClasses)).astype(np.float32)
-	    '''
-	    if self.idx % 20 == 0:
-		    print("{0} out of {1}".format(self.idx,self.nObs))
-		    '''
-            for i in range(self.bS):
-
-                while True:
-                    obs = self.csv.loc[self.idx]
-                    path = self.getPath(obs)
-                    self.idx +=1
-
-                    if os.path.exists(path) == True:
-                            x = cv2.imread(path)
-                            x = cv2.resize(x,(self.w,self.h),interpolation= cv2.INTER_LINEAR).astype(np.float32)
-                            x /= 255.0
-                            X[i] = x
-                            Y[i] = oneHotEncode(obs.label,self.nClasses)
-                            if self.idx == self.nObs:
-                                self.idx = 0
-                                self.shuffle()
-                                self.finishedEpoch = 1
-                            break
-
-            yield X,Y
-
+def oneHot(idx,nClasses=447):
+    oh = tf.sparse_to_dense(idx,output_shape = [nClasses], sparse_values = 1.0)
+    return oh
 
 if __name__ == "__main__":
-    eg = dataGenerator("train",bS=4,inputSize=(250,250,3))
-    gen = eg.generator()
-    for i in tqdm(range(2)):
-        X,Y = next(gen)
+
+
+    # Decode csv
+    csvPath = "/home/msmith/kaggle/whale/trainCV.csv"
+    df = pd.read_csv(csvPath)
+
+    #csvPath = "/home/msmith/kaggle/whale/identifier/trainCV10.csv"
+    print(df.head())
+    print(df.shape)
+
+    csvQ = tf.train.string_input_producer([csvPath])
+    reader = tf.TextLineReader(skip_header_lines=1)
+    k, v = reader.read(csvQ)
+
+    defaults = [tf.constant([], shape = [1], dtype = tf.int32),
+                tf.constant([], dtype = tf.string)]
+                
+    label, path = tf.decode_csv(v,record_defaults=defaults)
+
+    labelOh = oneHot(idx=label)
+    label = tf.reshape(label,[1])
+
+    # Define subgraph to take filename, read filename, decode and enqueue
+    image_bytes = tf.read_file(path)
+    decoded_img = tf.image.decode_jpeg(image_bytes)
+    #imageQ = tf.FIFOQueue(128,[tf.uint8,tf.float32,tf.string])
+    imageQ = tf.FIFOQueue(128,[tf.uint8,tf.int32,tf.float32], shapes = [[600,800,3],[1],[447]])
+    enQ_op = imageQ.enqueue([decoded_img,label,labelOh])
+
+    NUM_THREADS = 16
+    Q = tf.train.QueueRunner(
+            imageQ,
+            [enQ_op]*NUM_THREADS,
+            imageQ.close(),
+            imageQ.close(cancel_pending_enqueues=True)
+            )
+
+    tf.train.add_queue_runner(Q)
+    bS = 4
+    x,yIdx,y = imageQ.dequeue_many(bS)
+    #x,y,path = imageQ.dequeue()
+
+
+    with tf.Session() as sess:
+        coord = tf.train.Coordinator()
+        threads = tf.train.start_queue_runners(coord=coord)
+
+        count = 0
+        while not coord.should_stop():
+            x_, y_, yIdx_ = sess.run([x,y,yIdx])
+            ipdb.set_trace()
+            show(x_,yIdx_)
+            count += x_.shape[0]
+
+
+

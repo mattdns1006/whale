@@ -25,7 +25,6 @@ def checkSize(df):
 			pass
 
         count = len(indicesToDrop)
-        ipdb.set_trace()
         df.drop(indicesToDrop,inplace=1)
         df.reset_index(inplace=1,drop=1)
 	print("Removed {0} files.".format(count))
@@ -45,7 +44,7 @@ def makeCrossValidationCSVs(ratio):
     nWhales = whaleNames.size
 
     whaleDict = pd.Series(whaleNames).to_dict()
-    whaleDict = {v: k+1 for k, v in whaleDict.items()}
+    whaleDict = {v: k for k, v in whaleDict.items()}
     whaleDictEncode = lambda x: whaleDict.get(x)
     df["label"] = df.whaleID.apply(whaleDictEncode)
     df["fullPath"] = df.apply(getFP,1)

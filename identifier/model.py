@@ -61,16 +61,15 @@ def model1(x,inDims,nClasses,nFeatsInit,nFeatsInc):
 
 	feats += featsInc
         
-	hconv8 = af(bn((conv2d(hconv7, weights[7]) + biases[7]),is_training=True))
-	hconv8 = mp(hconv8,kS=2,stride=2)
+	#hconv8 = af(bn((conv2d(hconv7, weights[7]) + biases[7]),is_training=True))
+	#hconv8 = mp(hconv8,kS=2,stride=2)
+	#feats += featsInc
 
-	feats += featsInc
-
-	sizeBeforeReshape = hconv8.get_shape().as_list()
+	sizeBeforeReshape = hconv7.get_shape().as_list()
 
 	nFeats = sizeBeforeReshape[1]*sizeBeforeReshape[2]*sizeBeforeReshape[3]
 
-	flatten = tf.reshape(hconv8, [-1, nFeats])
+	flatten = tf.reshape(hconv7, [-1, nFeats])
 
 	nLin = nClasses
 	wLin1 = weightVar([nFeats,nLin])
@@ -78,7 +77,7 @@ def model1(x,inDims,nClasses,nFeatsInit,nFeatsInc):
 	yPred = tf.matmul(flatten,wLin1) + bLin1
         yPred = bn(yPred)
 
-	for l in [x, hconv1,hconv2,hconv3,hconv4,hconv5,hconv6,hconv7,hconv8,flatten,yPred]:
+	for l in [x, hconv1,hconv2,hconv3,hconv4,hconv5,hconv6,hconv7,flatten,yPred]:
 	    print(l.get_shape())
 
 	return yPred

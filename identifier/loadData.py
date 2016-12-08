@@ -37,13 +37,13 @@ if __name__ == "__main__":
 
     labelOh = oneHot(idx=label)
     label = tf.reshape(label,[1])
+    pathRe = tf.reshape(path,[1])
 
     # Define subgraph to take filename, read filename, decode and enqueue
     image_bytes = tf.read_file(path)
     decoded_img = tf.image.decode_jpeg(image_bytes)
-    #imageQ = tf.FIFOQueue(128,[tf.uint8,tf.float32,tf.string])
-    imageQ = tf.FIFOQueue(128,[tf.uint8,tf.int32,tf.float32], shapes = [[600,800,3],[1],[447]])
-    enQ_op = imageQ.enqueue([decoded_img,label,labelOh])
+    imageQ = tf.FIFOQueue(128,[tf.uint8,tf.int32,tf.float32,tf.string], shapes = [[600,800,3],[1],[447],[1]])
+    enQ_op = imageQ.enqueue([decoded_img,label,labelOh,pathRe])
 
     NUM_THREADS = 16
     Q = tf.train.QueueRunner(
@@ -55,20 +55,23 @@ if __name__ == "__main__":
 
     tf.train.add_queue_runner(Q)
     bS = 4
-    x,yIdx,y = imageQ.dequeue_many(bS)
-    #x,y,path = imageQ.dequeue()
+    dQ = imageQ.dequeue()
+    X, Ylab, Y, paths = tf.train.batch(dQ, batch_size = 10, capacity = 40)
 
+    init_op = tf.initialize_all_variables()
 
     with tf.Session() as sess:
+        sess.run(init_op)
         coord = tf.train.Coordinator()
-        threads = tf.train.start_queue_runners(coord=coord)
+        threads = tf.train.start_queue_runners(sess=sess,coord=coord)
 
         count = 0
-        while not coord.should_stop():
-            x_, y_, yIdx_ = sess.run([x,y,yIdx])
-            ipdb.set_trace()
-            show(x_,yIdx_)
+        for i in xrange(10):
+            x_, y_, yIdx_, paths_ = sess.run([X,Y,Ylab,paths])
+            show(x_,paths_)
             count += x_.shape[0]
+            print(count)
+
 
 
 

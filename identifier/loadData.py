@@ -1,5 +1,4 @@
 import tensorflow as tf
-import ipdb
 import pandas as pd
 import os
 import matplotlib.pyplot as plt
@@ -10,6 +9,13 @@ def show(X,Y="none"):
     plt.imshow(X)
     plt.title(Y)
     plt.show()
+
+def prepImg(img,shape):
+    img = tf.cast(img,tf.float32)
+    img = tf.mul(img,1/255.0)
+    print(img)
+    img = tf.image.resize_images(img,shape[0],shape[1],method=0,align_corners=False)
+    return img
 
 def oneHot(idx,nClasses=447):
     oh = tf.sparse_to_dense(idx,output_shape = [nClasses], sparse_values = 1.0)
@@ -26,7 +32,7 @@ def readCsv(csvPath):
     label, path = tf.decode_csv(v,record_defaults=defaults)
     return path, label
 
-def loadData(csvPath,batchSize=10,batchCapacity=40,nThreads=16): 
+def loadData(csvPath,shape, batchSize=10,batchCapacity=40,nThreads=16): 
     path, label = readCsv(csvPath)
     labelOh = oneHot(idx=label)
     pathRe = tf.reshape(path,[1])
@@ -34,7 +40,8 @@ def loadData(csvPath,batchSize=10,batchCapacity=40,nThreads=16):
     # Define subgraph to take filename, read filename, decode and enqueue
     image_bytes = tf.read_file(path)
     decoded_img = tf.image.decode_jpeg(image_bytes)
-    imageQ = tf.FIFOQueue(128,[tf.uint8,tf.float32,tf.string], shapes = [[600,800,3],[447],[1]])
+    decoded_img = prepImg(decoded_img,shape=shape)
+    imageQ = tf.FIFOQueue(128,[tf.float32,tf.float32,tf.string], shapes = [shape,[447],[1]])
     enQ_op = imageQ.enqueue([decoded_img,labelOh,pathRe])
 
     NUM_THREADS = nThreads

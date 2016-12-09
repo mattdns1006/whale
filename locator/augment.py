@@ -13,8 +13,6 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from scipy import stats
 
-def augSingle(img,nAug):
-
 def aug():
     newWidth, newHeight = 900,600
     labels = glob.glob("../imgs/*/lS_*")

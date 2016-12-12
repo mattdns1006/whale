@@ -1,0 +1,236 @@
+%% Author_tex.tex
+%% This file describes the coding for IET.cls
+
+\documentclass{IET}%%%%where IET is the template name
+
+%The authors can define any packages after the \documentclass{IET} command.
+
+%Some of the packages are:
+%\usepackage{hyperref} for linking the cross references
+%\usepackage{graphics} for dealing with figures.
+%\usepackage{algorithmic} for describing algorithms
+
+%The author can find the documentation of the above style file and any additional
+%supporting files if required from "http://www.ctan.org"
+
+% *** Do not adjust lengths that control margins, column widths, etc. ***
+
+\newtheorem{theorem}{Theorem}
+\newtheorem{condition}{Condition}
+
+\begin{document}
+
+\title{Classifying individual northern Atlantic right whales}
+
+\author[1,*]{Matt Smith}
+\affil{Department of Statistics, University of Warwick, Coventry, United Kingdom}
+
+\author{Abhir Bhalerao}
+%%%% By default, the citations will come automatically,
+%%%% The optional bracket "[2.*]" is used  to display the corresponding author symbol
+\affil{Department of Computer Science, University of Warwick, Coventry, United Kingdom}
+
+\author{Ben Graham}
+\affil{Facebook Artificial Intelligence Research, Paris, France}
+%%%% Corresponding author detail must placed here
+\affil[*]{m.d.smith@warwick.ac.uk}
+
+\abstract{Accurate monitoring of individuals in a threatened species is of upmost importance to conservationists and researchers. Human observation is expensive and autonomous ariel photography is becoming an increasingly useful technique regarding animal biometrics \cite{koh2012dawn,martin2012estimating}. We employ a wide range of interesting techniques to build a "face-identification" algorithm for ariel photos of northern Atlantic right whales. We follow a conventional modern face recognition pipeline consisting of the stages: detect, align, represent and classify \cite{taigman2014deepface}. We use deep learning algorithms to both detect and classify. A fully convolutional network \cite{long2015fully} is employed to semantically segment a given image to infer the location of the whale's head and body, we then use PCA on the resulting image to normalize for the whale's direction. Hand labelling masks is needed to generate supervised training data.}
+
+\maketitle
+
+\section{Introduction}
+sup .
+
+\subsection{Related work}
+Subsection text here.
+
+\subsubsection{Conclusion}
+Subsubsection text here.
+
+\section{Whale normalization}
+
+\subsubsection{Results}
+
+\section{Whale classification}
+
+\subsubsection{Results}
+
+\section{Conclusion}
+Sample equations.
+
+%%% Numbered equation
+\begin{align}\label{1.1}
+\begin{split}
+\frac{\partial u(t,x)}{\partial t} &= Au(t,x) \left(1-\frac{u(t,x)}{K}\right)-B\frac{u(t-\tau,x) w(t,x)}{1+Eu(t-\tau,x)},\\
+\frac{\partial w(t,x)}{\partial t} &=\delta \frac{\partial^2w(t,x)}{\partial x^2}-Cw(t,x)+D\frac{u(t-\tau,x)w(t,x)}{1+Eu(t-\tau,x)},
+\end{split}
+\end{align}
+
+\begin{align}\label{1.2}
+\begin{split}
+\frac{dU}{dt} &=\alpha U(t)(\gamma -U(t))-\frac{U(t-\tau)W(t)}{1+U(t-\tau)},\\
+\frac{dW}{dt} &=-W(t)+\beta\frac{U(t-\tau)W(t)}{1+U(t-\tau)}.
+\end{split}
+\end{align}
+
+%%%% Unnumbered equation
+\[
+\frac{\partial(F_1,F_2)}{\partial(c,\omega)}_{(c_0,\omega_0)} = \left|
+\begin{array}{ll}
+\frac{\partial F_1}{\partial c} &\frac{\partial F_1}{\partial \omega} \\\noalign{\vskip3pt}
+\frac{\partial F_2}{\partial c}&\frac{\partial F_2}{\partial \omega}
+\end{array}\right|_{(c_0,\omega_0)}=-4c_0q\omega_0 -4c_0\omega_0p^2 =-4c_0\omega_0(q+p^2)>0.
+\]
+
+\section{Enunciations}
+%%%% If the author wants to add or modify the enunciation style
+%%%% they can define in the preamble as shown below.
+
+%%%% \newtheoremstyle{theorem}{6pt}{6pt}{\rm}{}{\sffamily}{ }{ }{}
+%%%% \theoremstyle{theorem}
+%%%% \newtheorem{theorem}{\sc Theorem}[section]
+
+%%%%\newtheoremstyle{corollary}{6pt}{6pt}{\rm}{}{\sffamily}{ }{ }{}
+%%%%\theoremstyle{corollary}
+%%%%\newtheorem{corollary}{\sc Corollary}[section]
+
+%%%%\newtheoremstyle{definition}{6pt}{6pt}{\rm}{}{\sffamily}{ }{ }{}
+%%%%\theoremstyle{definition}
+%%%%\newtheorem{definition}[theorem]{\sc Definition}
+%%%%
+%%%%\newtheorem{exercise}[theorem]{Exercise}
+
+\begin{theorem}\label{T0.1}
+Assume that $\alpha>0, \gamma>1, \beta>\frac{\gamma+1}{\gamma-1}$.
+Then there exists a small $\tau_1>0$, such that for $\tau\in
+[0,\tau_1)$, if $c$ crosses $c(\tau)$ from the direction of
+to  a small amplitude periodic traveling wave solution of
+(2.1), and the period of $(\check{u}^p(s),\check{w}^p(s))$ is
+\[
+\check{T}(c)=c\cdot \left[\frac{2\pi}{\omega(\tau)}+O(c-c(\tau))\right].
+\]
+\end{theorem}
+
+
+\begin{condition}\label{C2.2}
+From (0.8) and (2.10), it holds
+$\frac{d\omega}{d\tau}<0,\frac{dc}{d\tau}<0$ for $\tau\in
+[0,\tau_1)$. This fact yields that the system (2.1) with delay
+$\tau>0$ has the periodic traveling waves for smaller wave speed $c$
+than that the system (2.1) with $\tau=0$ does. That is, the
+delay perturbation stimulates an early occurrence of the traveling waves.
+\end{condition}
+
+
+\section{Figures \& Tables}
+
+The output for figure is:
+
+\begin{figure}[!h]
+%\centering\includegraphics{figurename.eps}
+%%%call your figure name in the place "figurename.eps"
+\caption{Insert figure caption here
+\subcaption{a}{Insert Sub caption here}
+\subcaption{b}{Insert Sub caption here}}
+\label{fig_sim}
+\end{figure}
+
+
+\vskip2pc
+
+\noindent The output for table is:
+
+\begin{table}[!h]
+\processtable{An Example of a Table\label{table_example}}%%%Table caption goes here
+{\tabcolsep24pt%%%%%%%%% \tabcolsep command is to adjust the inter column spacing of table
+\begin{tabular}{|c||c|}%%%The number of columns has to be defined here
+\hline
+One & Two\\ %%%% Table body
+\hline
+Three & Four\\%%%% Table body
+\hline
+\end{tabular}}{}
+\end{table}%%%End of the table
+
+\section{Conclusion}
+The conclusion text goes here.
+
+\section{Acknowledgment}
+
+Insert the Acknowledgment text here.
+
+\bibliographystyle{IEEEtran}
+\bibliography{mybib}
+%\vbox{\subsection{Websites}}
+%
+%\bibitem{bib1}
+%
+%`Author Guide - IET Research Journals', http://digital-library.theiet.org/journals/author-guide, accessed 27
+%November 2014
+%
+%\bibitem{bib2}
+%`Research journal length policy', http://digital-library.theiet.org/files/research\_journals\_\break length\_policy.pdf, accessed 27
+%November 2014
+%
+%\bibitem{bib3}
+%`ORCID: Connecting research and researchers', http://orcid.org/, accessed 3 December 2014
+%
+%\bibitem{bib4}
+%`Fundref', http://www.crossref.org/fundref/, accessed 4 December 2014
+%
+%\vbox{\subsection{Journal articles}}
+%
+%\bibitem{bib5}
+%Smith, T., Jones, M.: 'The title of the paper', IET Syst. Biol., 2007, \textbf{1}, (2), pp. 1--7
+%
+%\bibitem{bib6}
+%Borwn, L., Thomas, H., James, C.,~\textit{et al}.:'The title of the paper, IET
+%Communications, 2012, \textbf{6}, (5), pp 125--138
+%
+%\vbox{\subsection{Conference Paper}}
+%
+%\bibitem{bib7}
+%Jones, L., Brown, D.: 'The title of the conference paper'. Proc. Int.
+%Conf. Systems Biology, Stockholm, Sweden, May 2006, pp. 1--7
+%
+%\vbox{\subsection{Book, book chapter and manual}}
+%
+%\bibitem{bib8}
+%Hodges, A., Smith, N.: 'The title of the book chapter', in Brown, S.
+%(Ed.): 'Handbook of Systems Biology' (IEE Press, 2004, 1st edn.), pp. 1--7
+%
+%\bibitem{bib9}
+%Harrison, E.A., and Abbott, C.: 'The title of the book' (XYZ Press,
+%2005, 2nd edn. 2006)
+%
+%\vbox{\subsection{Report}}
+%
+%\bibitem{bib10}
+%IET., 'Report Title' (Publisher, 2013), pp. 1-5
+%
+%\vbox{\subsection{Patent}}
+%
+%\bibitem{bib11}
+%Brown, F.: 'The title of the patent (if available)'. British Patent
+%123456, July 2004
+%
+%\bibitem{bib12}
+%Smith, D., Hodges, J.: British Patent Application 98765, 1925
+%
+%\vbox{\subsection{Thesis}}
+%
+%\bibitem{bib13}
+%Abbott, N.L.: 'The title of the thesis'. PhD thesis, XYZ University, 2005
+%
+%\vbox{\subsection{Standard}}
+%
+%\bibitem{bib14}
+%BS1234: 'The title of the standard', 2006
+%
+%
+\section{Appendices}
+%
+Appendices are allowed but please be aware that these are included in the overall word count.
+
+\end{document}

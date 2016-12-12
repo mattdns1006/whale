@@ -18,9 +18,9 @@ cmd:option("-modelName","identifier1.model","Name of model.")
 cmd:option("-modelSave",5000,"How often to save.")
 cmd:option("-loadModel",0,"Load model.")
 
-cmd:option("-batchSize",4,"duh")
-cmd:option("-inH",420,"Input size (h).")
-cmd:option("-inW",700,"Input size (w).")
+cmd:option("-batchSize",5,"duh")
+cmd:option("-inH",400,"Input size (h).")
+cmd:option("-inW",600,"Input size (w).")
 cmd:option("-c",3,"Number of color channels.")
 
 cmd:option("-nFeats",16,"Number of features.")
@@ -33,7 +33,6 @@ cmd:option("-lr",0.0001,"Learning rate.")
 cmd:option("-epochs",20,"N epochs")
 cmd:text()
 
-
 params = cmd:parse(arg)
 
 optimState = {learningRate = params.lr, beta1 = 0.9, beta2 = 0.999, epsilon = 1e-8 }
@@ -44,9 +43,32 @@ logger:add(params)
 dofile("loadData.lua")
 models = require "models"
 run = require "run"
-criterion = nn.CrossEntropyCriterion(weightsT):cuda()
+--criterion = nn.CrossEntropyCriterion(weightsT):cuda()
+criterion = nn.CrossEntropyCriterion():cuda()
+nClasses = 447
 
 if params.loadModel == 1 then print("==> Loading model") model = torch.load(modelName):cuda() else model = models.model1():cuda() end
+
+function display(x,trainOrTest)
+		if imgDisplay == nil then 
+			local zoom = params.zoom or 2
+			local initPic = torch.rand(1,128,128)
+			imgDisplay0 = image.display{image=initPic, zoom=zoom, offscreen=false}
+			imgDisplay1 = image.display{image=initPic, zoom=zoom, offscreen=false}
+			imgDisplay2 = image.display{image=initPic, zoom=zoom, offscreen=false}
+			imgDisplay = 1 
+		end
+		local title
+		if trainOrTest == "train" then
+			title = "Train"
+			image.display{image = x,  win = imgDisplay0, legend = title.. " Train."}
+		elseif trainOrTest == "Test" then
+			title = "Test"
+			image.display{image = x,  win = imgDisplay1, legend = title .. "Test."}
+		else
+			image.display{image = x,  win = imgDisplay1, legend = trainOrTest}
+		end
+end
 
 function runTrTe()
 	feed = provider.init(params.batchSize,params.inH,params.inW,params.c)
@@ -60,9 +82,13 @@ function runTrTe()
 		feed.train.finishedEpoch = false
 		feed.test.finishedEpoch = false
 		model:training()
+		count = 0
 		while feed.train.finishedEpoch == false do
 			X,Y = feed:getNextBatch("train")
 			outputs, loss = run.train(X,Y)
+
+			print(loss)
+			if count % 50 == 0 then display(X,"train"); display(cmTr.mat,"cm") end
 
 			if X:size(1) == 1 then
 				cmTr:add(outputs,Y)
@@ -70,18 +96,22 @@ function runTrTe()
 				cmTr:batchAdd(outputs,Y)
 			end
 			table.insert(trLoss,loss)
+			count = count + 1
 		end
 		
 		model:evaluate()
+		count = 0
 		while feed.test.finishedEpoch == false do
 			X,Y = feed:getNextBatch("test")
 			outputs, loss = run.test(X,Y)
+			if count % 50 == 0 then display(X,"test"); display(cmTe.mat,"cm") end
 			if X:size(1) == 1 then
 				cmTe:add(outputs,Y)
 			else 
 				cmTe:batchAdd(outputs,Y)
 			end
 			table.insert(teLoss,loss)
+			count = count + 1
 		end
 		print(string.rep("---",30))
 		print("Train CM")

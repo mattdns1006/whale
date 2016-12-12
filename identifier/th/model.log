@@ -1,0 +1,2 @@
+modelSave	batchSize	loadModel	modelName	kS	inW	nDown	inH	lr	run	nFeatsInc	c	nFeats	epochs	
+ 5.0000e+03	 5.0000e+00	 0.0000e+00	identifier1.model	 3.0000e+00	 6.0000e+02	 7.0000e+00	 4.0000e+02	 1.0000e-04	 1.0000e+00	 1.6000e+01	 3.0000e+00	 1.6000e+01	 2.0000e+01	

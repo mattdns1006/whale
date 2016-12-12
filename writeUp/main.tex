@@ -20,7 +20,7 @@
 
 \begin{document}
 
-\title{Classifying individual northern Atlantic right whales}
+\title{A face individual North Atlantic right whales}
 
 \author[1,*]{Matt Smith}
 \affil{Department of Statistics, University of Warwick, Coventry, United Kingdom}
@@ -35,20 +35,25 @@
 %%%% Corresponding author detail must placed here
 \affil[*]{m.d.smith@warwick.ac.uk}
 
-\abstract{Accurate monitoring of individuals in a threatened species is of upmost importance to conservationists and researchers. Human observation is expensive and autonomous ariel photography is becoming an increasingly useful technique regarding animal biometrics \cite{koh2012dawn,martin2012estimating}. We employ a wide range of interesting techniques to build a "face-identification" algorithm for ariel photos of northern Atlantic right whales. We follow a conventional modern face recognition pipeline consisting of the stages: detect, align, represent and classify \cite{taigman2014deepface}. We use deep learning algorithms to both detect and classify. A fully convolutional network \cite{long2015fully} is employed to semantically segment a given image to infer the location of the whale's head and body, we then use PCA on the resulting image to normalize for the whale's direction. Hand labelling masks is needed to generate supervised training data.}
+\abstract{Accurate monitoring of individuals in a threatened species is of upmost importance to conservationists and researchers. Human observation is expensive and autonomous ariel photography is becoming an increasingly useful technique regarding animal biometrics \cite{koh2012dawn,martin2012estimating}. Fewer than 500 North Atlantic right whales are left in the world's oceans. As with many animal biometric inspection processes, tracking and monitoring individuals is an extremely time consuming process. Advances in the implementation and performance of deep learning algorithms have drastically improved performance in object detection and recognition tasks \cite{lecun2015deep}.  We employ a wide range of interesting techniques to build a "face-identification" algorithm for ariel photos of 447 unique. We follow a conventional modern face recognition pipeline consisting of the stages: detect, align, represent and classify \cite{taigman2014deepface}. We use deep learning algorithms to both detect and classify. A fully convolutional network \cite{long2015fully} is employed to semantically segment a given image to detect the location of the whale's head and body, we then use PCA on the resulting image to normalize for the whale's direction. A significant amount of hand labelled masks are needed to generate enough supervised training data to make this work effectively \cite{hong2015decoupled}. We tackle this issue by employing semi-supervised learning techniques and histogram matching between images to improve our localization algorithm and find a significant improvement in our results.}
 
 \maketitle
 
 \section{Introduction}
-sup .
+We entered the 2015 Right Whale Recognition online competition issued by Kaggle. Data consists of aeriel images, the vast majority containing a single Right whale. The training set contains 4543 labelled images and the test set 6925 unlabelled images. Evaluation is based on the multi-class logarithmic loss
+\begin{eqnarray}
+\text{logloss} = - \frac{1}{N} \sum_{i=1}^{N} \sum_{i=1}^{M} y_{ij} \text{log}(p_{ij}),
+\end{eqnarray}
+where $N$ is the number of images in the test set, $M$ is the number of whale labels, log is the natural logarithm, $y_{ij}$ is 1 if observation $i$ belongs to whale $j$ and 0 otherwise, and $p_{ij}$ is the predicted probability that observation $i$ belongs to whale $j$. 
+
+The data was collected and labelled over a 10 year period by NOAA (National Oceanic and Atmospehric Administration) scientists via numerous helicopter trips over the northern Atlantic. The 447 whales are 
 
 \subsection{Related work}
 Subsection text here.
 
-\subsubsection{Conclusion}
-Subsubsection text here.
+\section{Whale alignment}
 
-\section{Whale normalization}
+It is helpful to remove variation in inputs before giving them to a deep learning algorithm and specifically with faces, the success of a learned network is highly dependant on an alignment step \cite{lecun2012efficient,taigman2014deepface}.
 
 \subsubsection{Results}
 
@@ -58,30 +63,6 @@ Subsubsection text here.
 
 \section{Conclusion}
 Sample equations.
-
-%%% Numbered equation
-\begin{align}\label{1.1}
-\begin{split}
-\frac{\partial u(t,x)}{\partial t} &= Au(t,x) \left(1-\frac{u(t,x)}{K}\right)-B\frac{u(t-\tau,x) w(t,x)}{1+Eu(t-\tau,x)},\\
-\frac{\partial w(t,x)}{\partial t} &=\delta \frac{\partial^2w(t,x)}{\partial x^2}-Cw(t,x)+D\frac{u(t-\tau,x)w(t,x)}{1+Eu(t-\tau,x)},
-\end{split}
-\end{align}
-
-\begin{align}\label{1.2}
-\begin{split}
-\frac{dU}{dt} &=\alpha U(t)(\gamma -U(t))-\frac{U(t-\tau)W(t)}{1+U(t-\tau)},\\
-\frac{dW}{dt} &=-W(t)+\beta\frac{U(t-\tau)W(t)}{1+U(t-\tau)}.
-\end{split}
-\end{align}
-
-%%%% Unnumbered equation
-\[
-\frac{\partial(F_1,F_2)}{\partial(c,\omega)}_{(c_0,\omega_0)} = \left|
-\begin{array}{ll}
-\frac{\partial F_1}{\partial c} &\frac{\partial F_1}{\partial \omega} \\\noalign{\vskip3pt}
-\frac{\partial F_2}{\partial c}&\frac{\partial F_2}{\partial \omega}
-\end{array}\right|_{(c_0,\omega_0)}=-4c_0q\omega_0 -4c_0\omega_0p^2 =-4c_0\omega_0(q+p^2)>0.
-\]
 
 \section{Enunciations}
 %%%% If the author wants to add or modify the enunciation style
@@ -101,26 +82,26 @@ Sample equations.
 %%%%
 %%%%\newtheorem{exercise}[theorem]{Exercise}
 
-\begin{theorem}\label{T0.1}
-Assume that $\alpha>0, \gamma>1, \beta>\frac{\gamma+1}{\gamma-1}$.
-Then there exists a small $\tau_1>0$, such that for $\tau\in
-[0,\tau_1)$, if $c$ crosses $c(\tau)$ from the direction of
-to  a small amplitude periodic traveling wave solution of
-(2.1), and the period of $(\check{u}^p(s),\check{w}^p(s))$ is
-\[
-\check{T}(c)=c\cdot \left[\frac{2\pi}{\omega(\tau)}+O(c-c(\tau))\right].
-\]
-\end{theorem}
-
-
-\begin{condition}\label{C2.2}
-From (0.8) and (2.10), it holds
-$\frac{d\omega}{d\tau}<0,\frac{dc}{d\tau}<0$ for $\tau\in
-[0,\tau_1)$. This fact yields that the system (2.1) with delay
-$\tau>0$ has the periodic traveling waves for smaller wave speed $c$
-than that the system (2.1) with $\tau=0$ does. That is, the
-delay perturbation stimulates an early occurrence of the traveling waves.
-\end{condition}
+%%\begin{theorem}\label{T0.1}
+%%Assume that $\alpha>0, \gamma>1, \beta>\frac{\gamma+1}{\gamma-1}$.
+%%Then there exists a small $\tau_1>0$, such that for $\tau\in
+%%[0,\tau_1)$, if $c$ crosses $c(\tau)$ from the direction of
+%%to  a small amplitude periodic traveling wave solution of
+%%(2.1), and the period of $(\check{u}^p(s),\check{w}^p(s))$ is
+%%\[
+%%\check{T}(c)=c\cdot \left[\frac{2\pi}{\omega(\tau)}+O(c-c(\tau))\right].
+%%\]
+%%\end{theorem}
+%%
+%%
+%%\begin{condition}\label{C2.2}
+%%From (0.8) and (2.10), it holds
+%%$\frac{d\omega}{d\tau}<0,\frac{dc}{d\tau}<0$ for $\tau\in
+%%[0,\tau_1)$. This fact yields that the system (2.1) with delay
+%%$\tau>0$ has the periodic traveling waves for smaller wave speed $c$
+%%than that the system (2.1) with $\tau=0$ does. That is, the
+%%delay perturbation stimulates an early occurrence of the traveling waves.
+%%\end{condition}
 
 
 \section{Figures \& Tables}
@@ -158,7 +139,8 @@ The conclusion text goes here.
 
 \section{Acknowledgment}
 
-Insert the Acknowledgment text here.
+Thanks to Christin Khan and Leah Crowe from NOAA for hand labeling the images. 
+Kaggle for competition.
 
 \bibliographystyle{IEEEtran}
 \bibliography{mybib}

@@ -7,6 +7,69 @@ from tensorflow.contrib.layers import layers as tfLayers
 bn = tfLayers.batch_norm
 af = tf.nn.relu
 
+def model2(x,inDims,nClasses,nFeatsInit,nFeatsInc):
+	bs, h, w, c = inDims
+	weights = {}
+	biases = {}
+	feats = nFeatsInit
+	featsInc = nFeatsInc 
+	kS = 3
+
+        def block(inTensor,inputFeats,outputFeats,kS):
+            w1 = weightVar([kS, kS, inputFeats, outputFeats])
+            b1 = biasVar([outputFeats])
+            print(w1.get_shape())
+            print(b1.get_shape())
+            w2 = weightVar([kS, kS, outputFeats, outputFeats])
+            b2 = biasVar([outputFeats])
+            print(w2.get_shape())
+            print(b2.get_shape())
+            hconv = af(bn((conv2d(inTensor, w1) + b1),is_training=True))
+            hconv = af(bn((conv2d(hconv, w2) + b2),is_training=True))
+            block = mp(hconv,kS=2,stride=2)
+            return block
+        
+        nOut = nFeatsInit
+        block1 = block(x,3,nOut,kS)
+        nIn = nOut
+        nOut = nFeatsInit + nFeatsInc
+
+        block2 = block(block1,nIn,nOut,kS)
+        nIn = nOut
+        nOut += nFeatsInc
+
+        block3 = block(block2,nIn,nOut,kS)
+        nIn = nOut
+        nOut += nFeatsInc
+
+        block4 = block(block3,nIn,nOut,kS)
+        nIn = nOut
+        nOut += nFeatsInc
+
+        block5 = block(block4,nIn,nOut,kS)
+        nIn = nOut
+        nOut += nFeatsInc
+
+        block6 = block(block5,nIn,nOut,kS)
+        nIn = nOut
+        nOut += nFeatsInc
+
+        block7 = block(block6,nIn,nOut,kS)
+
+	sizeBeforeReshape = block7.get_shape().as_list()
+
+	nFeats = sizeBeforeReshape[1]*sizeBeforeReshape[2]*sizeBeforeReshape[3]
+	flatten = tf.reshape(block7, [-1, nFeats])
+
+	nLin = nClasses
+	wLin1 = weightVar([nFeats,nLin])
+	bLin1 = biasVar([nLin])
+	yPred = tf.matmul(flatten,wLin1) + bLin1
+        yPred = bn(yPred)
+        return yPred
+
+
+
 def model1(x,inDims,nClasses,nFeatsInit,nFeatsInc):
 	bs, h, w, c = inDims
 	weights = {}
@@ -25,6 +88,7 @@ def model1(x,inDims,nClasses,nFeatsInit,nFeatsInc):
 
 	    weights[i] = weightVar([kS, kS, inputFeats, outputFeats])
 	    biases[i] = biasVar([outputFeats])
+            #print(weights[i].get_shape(),biases[i].get_shape())
 
 	hconv1 = af(bn((conv2d(x, weights[0]) + biases[0]),is_training=True))
 	hconv1 = mp(hconv1,kS=2,stride=2)

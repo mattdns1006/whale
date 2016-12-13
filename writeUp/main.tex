@@ -11,6 +11,7 @@
 %\usepackage{algorithmic} for describing algorithms
 \usepackage{fixltx2e}
 \usepackage{hyperref}
+\usepackage{capt-of}
 %The author can find the documentation of the above style file and any additional
 %supporting files if required from "http://www.ctan.org"
 
@@ -20,6 +21,7 @@
 \newtheorem{condition}{Condition}
 
 \newcommand{\twoPic}{0.45}
+\newcommand{\onePic}{2\twoPic}
 \newcommand{\real}{\mathbb{R}}
 
 \begin{document}
@@ -63,7 +65,11 @@ Subsection text here.
 
 \section{Alignment}
 
-It is helpful to remove variation in inputs before giving them to a deep learning algorithm and, especially with faces, the success of a learned network is highly dependant on an alignment step \cite{lecun2012efficient,taigman2014deepface}. We randomly choose 550 images from our training set $M^{Train}$ and another random 150 images to generate a test set $M^{Test}$. Using a graphics editor, for each $X_i \in {M^{Train}, M^{Test}}$ we create a semantic mask denoted $M_i$. An example of a pair is shown in figure \ref{fig:whaleLabel}.
+It is helpful to remove variation in inputs before giving them to a deep learning algorithm and, especially with faces, the success of a learned network is highly dependant on an alignment step \cite{lecun2012efficient,taigman2014deepface}. 
+
+\subsubsection{Mask prediction}
+
+We randomly choose 550 images from our training set $M^{Train}$ and another random 150 images to generate a test set $M^{Test}$. Using a graphics editor, for each $X_i \in {M^{Train}, M^{Test}}$ we create a semantic mask denoted $M_i$. An example of a pair is shown in figure \ref{fig:whaleLabel}.
 \begin{figure}[H]
 \centering     %%% not \center
 \subfigure[]{\includegraphics[width=\twoPic\textwidth]{images/maskExample/x.jpg}}
@@ -72,19 +78,52 @@ It is helpful to remove variation in inputs before giving them to a deep learnin
 a) $X_i$, b) $M_i$.
 }\label{fig:whaleLabel}
 \end{figure}
-We distinguish between head, body and sea using red, yellow and black respectivley. Having two colors for distinguishing parts of the whale enables us to infer the direcition in which the whale is pointing. We rescale each $X_i$ to dimension $w \times h \times c = 600 \times 900 \times 3$ and each $M_i$ to $w^{'}\times h^{'}\times c^{'} = 19 \times 29 \times 3$. We use a fully connected convolutional neural network (FCNN) to learn a function $f: \real^{w\times h \times c} \to \real^{w^{'}\times h^{'}\times c^{'}}$. We are not interested in a huge amount of detail being produced in our predicted $M_i$, enough to infer head and body location, hence our choice for a smaller output space.
+We distinguish between head, body and sea using red, yellow and black respectivley. Having two colors for distinguishing parts of the whale enables us to infer the direcition in which the whale is pointing. We rescale each $X_i$ to dimension $w \times h \times c = 600 \times 900 \times 3$ and each $M_i$ to $w^{'}\times h^{'}\times c^{'} = 19 \times 29 \times 3$. We use a fully connected convolutional neural network (FCNN) to learn a function $f_1: \real^{w\times h \times c} \to \real^{w^{'}\times h^{'}\times c^{'}}$. We are not interested in a huge amount of detail being produced in our predicted $M_i$, enough to infer head and body location, hence our choice for relatively small output space.
 
 We describe our neural network architecture as follows;
 \begin{align}\label{eq:whaleconv1}
-	 F_1 = \{\text{down\textsubscript{0}} - , ... , - \text{down\textsubscript{4}} - 3\text{C}_{2D}3/1 - \text{sigmoid}\}, 
+	 f_1 = \{\text{down\textsubscript{0}} - , ... , - \text{down\textsubscript{4}} - 3\text{C}_{2D}3/1 - \text{sigmoid}\}, 
 \end{align}
 	where 
-\begin{align*}
-			 \text{conv\textsubscript{n}} &= \{(48 + 32\text{n})\text{C}_{2D}3/1 - \text{BN} - \text{ReLU}\} \\	
-     		 \text{down\textsubscript{n}}  &= \{\text{conv\textsubscript{n}}- \text{MP}3/2\}. \\	
-\end{align*}
-The following notation for denoting a network architecture is similar to \cite{graham2014fractional} where $\{a-b-c\}$ denotes a network which is passed through the three layers $a$ to $b$ and finally $c$. $fC_{iD}k/s$ denotes an $i$ dimensional convolutional layer with kernel size $k$ in each dimension, a stride of $s$ and number of filters $f$. Similarly MP$k/s$ is a two dimensional max-pooling layer with kernel size $k$ and stride $s$. Other layer notations; BN $=$ batch normalization, ReLU and Sigmoid are layers of rectified linear activation units and sigmoid activation units respectively.
-\subsubsection{Mask prediction}
+\begin{align}
+			 \text{conv\textsubscript{n}} &= \{(48 + 32\text{n})\text{C}_{2D}3/1 - \text{BN} - \text{ReLU}\}, \\	
+     		 \text{down\textsubscript{n}}  &= \{\text{conv\textsubscript{n}}- \text{MP}3/2\}.
+     		 \label{eq:whaleconv1block}
+\end{align}
+The following notation for denoting a network architecture is similar to \cite{graham2014fractional}. $\{a-b-c\}$ denotes a network where the intial tensor is passed through the three consecutive layers; $a$ to $b$ and finally $c$. $fC_{iD}k/s$ denotes an $i$ dimensional convolutional layer with kernel size $k$ in each dimension, a stride of $s$ and number of filters $f$. Similarly MP$k/s$ is a two dimensional max-pooling layer with kernel size $k$ and stride $s$. Other layer notations; BN $=$ batch normalization, ReLU and Sigmoid are layers of rectified linear activation units and sigmoid activation units respectively. An illustration of $f_1$ is given in figure \ref{fig:nn}.
+
+\begin{figure}
+\centering
+\begin{minipage}[t]{.7\textwidth}
+\centering
+\vspace{0pt}
+\centering
+\includegraphics[width=\textwidth]{images/fcn/deconv2.png}
+\label{fig:nn}
+\caption{Overall architecture of $f_1$. Each sequential purple block represents the shape of the tensor after $down\textsubscript{i}$ as in \ref{eq:whaleconv1block}.}
+\end{minipage}\hfill
+\begin{minipage}[t]{.3\textwidth}
+\centering
+\vspace{40pt}
+\begin{tabular}{cc|cc}
+  No. & Size ($w\times h\times c$) &\\
+    \hline
+    \hline
+    $1$ & $900 \times 600 \times 3$  & \\
+    $2$ & $450 \times 300 \times 48$ &  \\
+    $3$ & $225 \times 150 \times 80$ & \\ 
+    $4$ & $113 \times 75 \times 112$ &\\
+    $5$ & $38 \times 57 \times 176$ &\\
+    $6$ &  $19 \times 29 \times 176$ &\\
+    $7$ &  $19 \times 29 \times 3$ &\\
+\end{tabular}
+\captionof{table}{This is the caption for table}
+\end{minipage}
+\end{figure}
+We train $f_1$ for 20 epochs, using the mean squared error (mse) as our loss function and the Adam optimization algorithm with an initial learning rate of $0.001$ and batch size of $5$. Together with the mse we also look at a variant of the S{\o}rensen-Dice coefficient to compare model performance \cite{sorensen1948method}
+\begin{align}
+\text{QS}(Y,\hat{Y})={\frac {2|Y\cap \hat{Y}| + 1}{|Y|+|\hat{Y}|+1}}.
+\end{align}
 
 \subsubsection{Results}
 

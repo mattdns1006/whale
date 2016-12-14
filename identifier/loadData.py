@@ -1,5 +1,6 @@
 import tensorflow as tf
 import pandas as pd
+from numpy import random as rng
 import os
 import matplotlib.pyplot as plt
 
@@ -13,7 +14,6 @@ def show(X,Y="none"):
 def prepImg(img,shape):
     img = tf.cast(img,tf.float32)
     img = tf.mul(img,1/255.0)
-    print(img)
     img = tf.image.resize_images(img,shape[0],shape[1],method=0,align_corners=False)
     return img
 
@@ -21,7 +21,18 @@ def oneHot(idx,nClasses=447):
     oh = tf.sparse_to_dense(idx,output_shape = [nClasses], sparse_values = 1.0)
     return oh
 
-def readCsv(csvPath):
+def shuffleCsvSave(csvPath):
+    csv = pd.read_csv(csvPath)
+    nObs = csv.shape[0]
+    rIdx = rng.permutation(nObs)
+    csv = csv.reindex(rIdx)
+    csv.reset_index(drop=1,inplace=1)
+    csv.to_csv(csvPath,index=0)
+
+def readCsv(csvPath,shuffle=False):
+    if shuffle == True:
+        print("Shuffling csv")
+        shuffleCsvSave(csvPath)
     csvQ = tf.train.string_input_producer([csvPath])
     reader = tf.TextLineReader(skip_header_lines=1)
     k, v = reader.read(csvQ)
@@ -32,8 +43,8 @@ def readCsv(csvPath):
     label, path = tf.decode_csv(v,record_defaults=defaults)
     return path, label
 
-def loadData(csvPath,shape, batchSize=10,batchCapacity=40,nThreads=16): 
-    path, label = readCsv(csvPath)
+def loadData(csvPath,shape, batchSize=10,batchCapacity=40,nThreads=16,shuffle=False): 
+    path, label = readCsv(csvPath,shuffle=shuffle)
     labelOh = oneHot(idx=label)
     pathRe = tf.reshape(path,[1])
 
@@ -62,8 +73,10 @@ if __name__ == "__main__":
     # Decode csv
     csvPathTr = "/home/msmith/kaggle/whale/trainCV.csv"
     csvPathTe = "/home/msmith/kaggle/whale/testCV.csv"
-    Xtr, Ytr, YtrPaths = loadData(csvPathTr)
-    Xte, Yte, YtePaths = loadData(csvPathTe)
+    shape = [560/2,400/2,3]
+    bs = 4
+    Xtr, Ytr, YtrPaths = loadData(csvPathTr,shape=shape,batchSize=bs)
+    Xte, Yte, YtePaths = loadData(csvPathTe,shape=shape,batchSize=bs)
 
     init_op = tf.initialize_all_variables()
 
@@ -73,9 +86,9 @@ if __name__ == "__main__":
         threads = tf.train.start_queue_runners(sess=sess,coord=coord)
 
         count = 0
-        for i in xrange(10):
+        for i in xrange(10000):
             x_, y_, Ypaths_ = sess.run([Xtr, Ytr, YtrPaths])
-            show(x_,Ypaths_)
+            #show(x_,Ypaths_)
             count += x_.shape[0]
             print(count)
 

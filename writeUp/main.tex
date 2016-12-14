@@ -124,8 +124,27 @@ We train $f_1$ for 20 epochs, using the mean squared error (mse) as our loss fun
 \begin{align}
 \text{QS}(Y,\hat{Y})={\frac {2|Y\cap \hat{Y}| + 1}{|Y|+|\hat{Y}|+1}}.
 \end{align}
+To artificially increase the size of the dataset we perform random augmentation procedures to each image on the fly; including, flips, rotations, shifts and sheers. However It is well known that a large quantity of varied data is required to train deep networks well, especially to fit complicated functions and generalise well to unseen examples. It is not plausible to learn a huge number of parameters in deep networks reliably in this scenario \cite{zhu2011semi}. Our particular case we hand labelled 700 images, moreover, as can be seen in the particular case of figure \ref{fig:whaleLabel}, they are far from perfect. Large variations in brightness and sea color in $X_i$ ensures even more data is needed to generalize well. 
 
-\subsubsection{Results}
+We combated variation in sea color and brightness by using a histogram matching \cite{gonzalez2002digital} based technique to normalize for such variation. Before each $X_i$ is fed into $f_1$ we match the cumulative distribution function (CDF) of each channel in its YUV color space to a prespecified baseline target image, denoted $T$. 
+
+\begin{figure}
+\centering
+\begin{minipage}[t]{.5\textwidth}
+\centering
+\includegraphics[height=\textwidth]{images/histMatch/images1.png}
+\caption{$X_i$, $T$ and histogram matched $X_i$.}
+\end{minipage}\hfill
+\begin{minipage}[t]{.5\textwidth}
+\centering
+\includegraphics[width=\textwidth]{images/histMatch/density.jpg}
+\caption{Densities}
+\end{minipage}
+\end{figure}
+
+\subsubsection{Mask processing}
+
+To indicate
 
 \section{Classification}
 

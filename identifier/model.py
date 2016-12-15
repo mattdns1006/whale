@@ -123,7 +123,7 @@ def model1(x,inDims,nClasses,nFeatsInit,nFeatsInc):
 	hconv7 = af(bn((conv2d(hconv6, weights[6]) + biases[6]),is_training=True))
 	hconv7 = mp(hconv7,kS=2,stride=2)
 
-	feats += featsInc
+	#feats += featsInc
         
 	#hconv8 = af(bn((conv2d(hconv7, weights[7]) + biases[7]),is_training=True))
 	#hconv8 = mp(hconv8,kS=2,stride=2)
@@ -135,13 +135,19 @@ def model1(x,inDims,nClasses,nFeatsInit,nFeatsInc):
 
 	flatten = tf.reshape(hconv7, [-1, nFeats])
 
-	nLin = nClasses
-	wLin1 = weightVar([nFeats,nLin])
-	bLin1 = biasVar([nLin])
-	yPred = tf.matmul(flatten,wLin1) + bLin1
-        yPred = bn(yPred)
+	nLin1 = 128 
+	wLin1 = weightVar([nFeats,nLin1])
+	bLin1 = biasVar([nLin1])
+	linear = tf.matmul(flatten,wLin1) + bLin1
+        linear = bn(linear)
 
-	for l in [x, hconv1,hconv2,hconv3,hconv4,hconv5,hconv6,hconv7,flatten,yPred]:
+	nLin2 = nClasses
+	wLin2 = weightVar([nLin1,nLin2])
+	bLin2 = biasVar([nLin2])
+	yPred = tf.matmul(linear,wLin2) + bLin2
+        #yPred = bn(yPred)
+
+	for l in [x, hconv1,hconv2,hconv3,hconv4,hconv5,hconv6,hconv7,flatten,linear,yPred]:
 	    print(l.get_shape())
 
 	return yPred

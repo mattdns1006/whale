@@ -23,6 +23,7 @@
 \newtheorem{condition}{Condition}
 
 \newcommand{\fourPic}{0.225}
+\newcommand{\threePic}{0.32}
 \newcommand{\twoPic}{0.45}
 \newcommand{\onePic}{2\twoPic}
 \newcommand{\real}{\mathbb{R}}
@@ -101,7 +102,7 @@ The following notation for denoting a network architecture is similar to \cite{g
 \centering
 \vspace{0pt}
 \centering
-\includegraphics[width=\textwidth]{images/fcn/deconv2.png}
+\includegraphics[width=\textwidth]{images/fcn/deconv3.png}
 \label{fig:nn}
 \caption{Overall architecture of $f_1$. Each sequential purple block represents the shape of the tensor after $down\textsubscript{i}$ as in \ref{eq:whaleconv1block}.}
 \end{minipage}\hfill
@@ -141,12 +142,11 @@ The results of which are given below in figure \ref{fig:histMatchResults}. As we
 
 \begin{figure}[H]
 \begin{center}
-\foreach \x in {1,2} 
-{
-\subfigure[]{\includegraphics[width=\twoPic\textwidth]{images/histMatch/results\x .png}}
-}
-\caption{Example of mask post processing stage;\
-a) Loss and dice score (threshold of 0.5) over epochs b) Dice score for test set over multiple threshold values.
+\subfigure[]{\includegraphics[height=0.25\textwidth ,width=\threePic\textwidth]{results/mse.jpg}}
+\subfigure[]{\includegraphics[height=0.25\textwidth ,width=\threePic\textwidth]{results/dice.jpg}}
+\subfigure[]{\includegraphics[height=0.25\textwidth ,width=\threePic\textwidth]{results/ROC/dice.jpg}}
+\caption{Test performance of $f_1$ for histogram matching and non matching (normal) preprocessing;\
+a) MSE per epoch b) Dice score per epoch and c) Dice score over all thresholds after final epoch.
 }\label{fig:histMatchResults}
 \end{center}
 \end{figure}

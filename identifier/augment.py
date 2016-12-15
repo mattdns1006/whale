@@ -23,7 +23,7 @@ def makedirs():
     os.makedirs("data/testAug") # all augmented te - hence add tr to te to get total
     os.makedirs("data/test") # single test image 
 
-def aug(trOrTe, nAug=10, outShape=(250,250)):
+def aug(trOrTe, nAug=10, outShape=(350,350)):
     oW, oH = outShape
     if trOrTe == "train":
         csv = pd.read_csv("../trainCV.csv")
@@ -48,7 +48,7 @@ def aug(trOrTe, nAug=10, outShape=(250,250)):
         for j in range(nAug):
             imgC = img.copy()
             wp = savePath + str(label) + "/"
-
+            makeDir(wp)
             if j > 0:
                 angle = np.random.uniform(-10,10)
                 scale = np.random.normal(1.0,0.1)
@@ -75,7 +75,6 @@ if __name__ == "__main__":
     except OSError:
         "Doesn't exist"
     makedirs()
-    for x in ["test"]:
-        print(x)
+    for x in ["train","test"]:
         aug(x)
 

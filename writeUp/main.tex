@@ -94,34 +94,37 @@ We describe our neural network architecture as follows;
      		 \text{down\textsubscript{n}}  &= \{\text{conv\textsubscript{n}}- \text{MP}3/2\}.
      		 \label{eq:whaleconv1block}
 \end{align}
-The following notation for denoting a network architecture is similar to \cite{graham2014fractional}. $\{a-b-c-d\}$ denotes a network where the intial tensor $a$ is passed through the layers $b$, the output of which is passed through $c$ finally creating output $d$. $fC_{iD}k/s$ denotes an $i$ dimensional convolutional layer with kernel size $k$ in each dimension, a stride of $s$ and number of filters $f$. Similarly MP$k/s$ is a two dimensional max-pooling layer with kernel size $k$ and stride $s$. Other layer notations; BN $=$ batch normalization, ReLU and Sigmoid are layers of rectified linear activation units and sigmoid activation units respectively. An illustration of $f_1$ is given in figure \ref{fig:nn}.
+The following notation for denoting a network architecture is similar to \cite{graham2014fractional}. $\{a-b-c-d\}$ denotes a network where the intial tensor $a$ is passed through the layers $b$, the output of which is passed through $c$ finally creating output $d$. $fC_{iD}k/s$ denotes an $i$ dimensional convolutional layer with kernel size $k$ in each dimension, a stride of $s$ and number of filters $f$. Similarly MP$k/s$ is a two dimensional max-pooling layer with kernel size $k$ and stride $s$. Other layer notations; BN $=$ batch normalization, ReLU and Sigmoid are layers of rectified linear activation units and sigmoid activation units respectively. An illustration w of $f_1$ is given in figure \ref{fig:nn}.
 
 \begin{figure}
 \centering
-\begin{minipage}[t]{.7\textwidth}
+\begin{minipage}[t]{0.6\textwidth}
 \centering
 \vspace{0pt}
 \centering
-\includegraphics[width=\textwidth]{images/fcn/deconv3.png}
+\includegraphics[width=\textwidth]{images/fcn/deconv4.png}
 \label{fig:nn}
-\caption{Overall architecture of $f_1$. Each sequential purple block represents the shape of the tensor after $down\textsubscript{i}$ as in \ref{eq:whaleconv1block}.}
+\caption{Overall architecture of $f_1$.}
 \end{minipage}\hfill
 \begin{minipage}[t]{.3\textwidth}
 \centering
-\vspace{40pt}
-\begin{tabular}{cc|cc}
-  No. & Size ($w\times h\times c$) &\\
+\vspace{20pt}
+\begin{tabular}{|c||c|}
+\hline
+  No. & Shape ($w\times h\times c$) \\
     \hline
     \hline
-    $1$ & $900 \times 600 \times 3$  & \\
-    $2$ & $450 \times 300 \times 48$ &  \\
-    $3$ & $225 \times 150 \times 80$ & \\ 
-    $4$ & $113 \times 75 \times 112$ &\\
-    $5$ & $38 \times 57 \times 176$ &\\
-    $6$ &  $19 \times 29 \times 176$ &\\
-    $7$ &  $19 \times 29 \times 3$ &\\
+    $1$ & $900 \times 600 \times 3$   \\
+    $2$ & $450 \times 300 \times 48$  \\
+    $3$ & $225 \times 150 \times 80$  \\ 
+    $4$ & $113 \times 75 \times 112$ \\
+    $5$ & $57 \times 38 \times 144$ \\
+    $6$ &  $29 \times 19 \times 176$ \\
+    $7$ &  $29 \times 19 \times 3$ \\
+    \hline
+    
 \end{tabular}
-\captionof{table}{This is the caption for table}
+\captionof{table}{Shape of tensors depicted in figure \ref{fig:nn}}\label{tab:f1shapes}
 \end{minipage}
 \end{figure}
 We train $f_1$ for 20 epochs, using the mean squared error (MSE) as our loss function and the Adam optimization algorithm with an initial learning rate of $0.001$ and batch size of $5$. Together with the MSE we also look at a variant of the S{\o}rensen-Dice coefficient to compare model performance \cite{sorensen1948method}, given by
@@ -153,7 +156,7 @@ a) MSE per epoch b) Dice score per epoch and c) Dice score over all thresholds a
 
 \subsubsection{Mask post-processing}
 
-We find the largest ellipse of the mask in case more than one whale is in the photo, giving us $\hat{M}_i^{1}$. We then upscale $\hat{M}_i^{1}$ to the same dimensions as $X_i$. To infer direction we find the centroids of the red and green channels, denoted $m_r$ and $m_g$ respectivley. This gives us a vector indicating the direction in which the whale is pointing. To provide robustness to direction we calculate the direction of the first principal axis \cite{hu1962visual}, denoted $u_1 \in \real^2$ . As $u_1$ is an eigenvector we flip its direction if the angle between $u_1$ and $p = m_r - m_g$ is larger than $90\degree$. An example of this is given in figure \ref{fig:maskProcess}. 
+We find the largest ellipse of the mask in case more than one whale is in the photo, giving us $\hat{M}_i^{1}$. We then upscale $\hat{M}_i^{1}$ to the same dimensions as $X_i$. To infer direction we find the centroids of the red and green channels, denoted $m_r$ and $m_g$ respectivley. This gives us a vector indicating the direction in which the whale is pointing. To provide robustness to direction we calculate the direction of the first principal axis \cite{hu1962visual}, denoted $u_1 \in \real^2$ . As $u_1$ is an eigenvector we flip its direction if the angle between $u_1$ and $p = m_r - m_g$ is larger than $90\degree$. An example of this is given in figure \ref{fig:maskProcess}.
 \begin{figure}[H]
 \begin{center}
 \foreach \x in {1,2,3,4} 

@@ -1,35 +1,30 @@
 import tensorflow as tf
-
 import sys
 sys.path.append("/home/msmith/misc/tfFunctions/")
 import layers as layers
 from tensorflow.contrib.layers import layers as tfLayers
 from keras.layers.normalization import BatchNormalization
 
-def placeholderX(batchSize=None,dims=(600,900,3),nDown=6):
-    w,h,c = dims
-    x = tf.placeholder(tf.float32,shape = [batchSize,w,h,c])
-    return x
-
-def model(x,nFeatsInc=64):
+def model1(x,nFeats,nFeatsInc=0):
     conv = layers.conv2d
     af = tf.nn.relu
     af = tf.tanh
     mp = layers.mp
     bn = tfLayers.batch_norm
+    up = layers.deconv2d
 
     # Input = 900 x 600 x 3
     W= {}
     B = {}
     feats = 48 
-    nLayers = 6
+    nLayers = 5
 
     for i in range(nLayers):
         if i == 0:
             nIn = 3 
         elif i == nLayers-1:
             feats = 3
-        W[i] = layers.weightVar([3,3,nIn,feats],stddev=0.35)
+        W[i] = layers.weightVar([3,3,nIn,feats],stddev=0.05)
         B[i] = layers.biasVar([feats])
 
         nIn = feats
@@ -48,15 +43,23 @@ def model(x,nFeatsInc=64):
     hConv4 = mp(hConv4,3,2)
 
     hConv5 = bn(conv(hConv4,W[4]) + B[4],is_training=True)
-    hConv5 = mp(hConv5,2,2)
+    #hConv5 = mp(hConv5,2,2)
 
-    hConv6 = bn(conv(hConv5,W[5]) + B[5],is_training=True)
+    #hConv6 = bn(conv(hConv5,W[5]) + B[5],is_training=True)
 
-    yPred = tf.nn.sigmoid(hConv6)
+   # 
+   # W = layers.weightVar([3,3,3,3])
+   # B = layers.biasVar([3])
+   # os = getShape(hConv6)
+   # os[1]*=2
+   # os[2]*=2
+   # up1 = up(hConv6,W,os,2)
+
+    yPred = tf.nn.sigmoid(hConv5)
     
     i = 1
     print("Model dims")
-    for layer in [x,hConv1,hConv2,hConv3,hConv4,hConv5,hConv6,yPred]:
+    for layer in [x,hConv1,hConv2,hConv3,hConv4,hConv5,yPred]:
 	    print("Layer {0} = ".format(i),getShape(layer))
             i+=1
 
@@ -65,18 +68,12 @@ def model(x,nFeatsInc=64):
 def getShape(tensor):
     return tensor.get_shape().as_list()
 
-def aug(x):
-    return tf.image.random_contrast(x,0.6,1.3)
-
-def main(nFeatsInc = 64, batchSize=None,dims=(600,900,3),nDown=6):
-    x = placeholderX(batchSize,dims,nDown)
-    yPred = model(x,nFeatsInc)
-    oW, oH, oC = getShape(yPred)[1:]
-    y = tf.placeholder(tf.float32,shape = [None,oW,oH,oC])
-    return x, y,yPred
-
 
 if __name__ == "__main__":
-    x, y, yPred = main()
+    import ipdb
+    x = tf.placeholder(tf.float32,[1,1300,866,3])
+    yPred = model1(x)
+    ipdb.set_trace()
+    print("ere")
 
 

@@ -4,18 +4,6 @@ from numpy import random as rng
 import os, glob
 import matplotlib.pyplot as plt
 
-def show(X,Y,figsize=(10,10)):
-    bs, h, w, c = X.shape 
-    X = X.reshape(bs*h,w,c)
-    bs, h, w, c = Y.shape 
-    Y = Y.reshape(bs*h,w,c)
-    plt.figure(figsize=figsize) 
-    plt.subplot(121)
-    plt.imshow(X)
-    plt.subplot(122)
-    plt.imshow(Y)
-    plt.show()
-
 def prepImg(img,shape):
     img = tf.cast(img,tf.float32)
     img = tf.mul(img,1/255.0)
@@ -24,14 +12,25 @@ def prepImg(img,shape):
 
 def makeCsvs():
     train = glob.glob("../augmented/train/x_*")
-    test = glob.glob("../augmented/testAugmented/x_*")
-    testAug = glob.glob("../augmented/test/x_*")
+    testAug = glob.glob("../augmented/testAugmented/x_*")
+    test = glob.glob("../augmented/test/x_*")
 
-    allPaths = train + test + testAug
-    df = pd.DataFrame({"xPath":allPaths})
-    yPath = lambda x: x.replace("x_","y_")
-    df["yPath"] = df.xPath.apply(yPath)
-    df.to_csv("train.csv",index=0)
+    def trte(trOrTe):
+        assert trOrTe in ["train","test","all"], "needs to be one of train or test or all"
+        if trOrTe == "train":
+            trOrTe = train
+            wp = "train"
+        elif trOrTe == "test":
+            trOrTe = test 
+            wp = "test"
+        elif trOrTe == "all":
+            trOrTe = train + testAug + test 
+            wp = "all"
+        df = pd.DataFrame({"xPath":trOrTe})
+        yPath = lambda x: x.replace("x_","y_")
+        df["yPath"] = df.xPath.apply(yPath)
+        df.to_csv("{0}.csv".format(wp),index=0)
+    [trte(x) for x in ["train", "test","all"]]
 
     toFit = glob.glob("../../imgs/*/w1S_*")
     dfToFit = pd.DataFrame({"xPath":toFit})
@@ -83,20 +82,27 @@ def loadData(csvPath,inShape,outShape,batchSize=10,batchCapacity=40,nThreads=16,
 if __name__ == "__main__":
 	import ipdb
 	makeCsvs()
-	inShape = [600,900,3]
-	outShape = [38,57,3]
-
-	x, y, paths = loadData("train.csv",inShape,outShape)
+	inShape = [866,1300,3]
+	outShape = [28,41,3]
+	x, y, paths = loadData("test.csv",inShape,outShape)
         init_op = tf.initialize_all_variables()
     	ipdb.set_trace()
 
 	with tf.Session() as sess:
-
 		sess.run(init_op)
 		coord = tf.train.Coordinator()
 		threads = tf.train.start_queue_runners(sess=sess,coord=coord)
-		while True:
+                count = 0
+                ps = []
+
+                while True:
+                    try:
 			x_, y_, paths_ = sess.run([x,y,paths])
-			show(x_,y_)
-			ipdb.set_trace()
+
+                        count += 10
+                        if count % 200 == 0:
+                            ipdb.set_trace()
+                        ps.append(paths_)
+                    except tf.errors.OutOfRangeError:
+                        print("finished")
 

@@ -74,8 +74,9 @@ def aug():
             else:
                 path = "augmented/train/"
 
-            cv2.imwrite(path+"x_"+str(imgNo)+".jpg",imgX_)
-            cv2.imwrite(path+"y_"+str(imgNo)+".jpg",r_)
+            if imgX_.shape == (newHeight,newWidth,3):
+                cv2.imwrite(path+"x_"+str(imgNo)+".jpg",imgX_)
+                cv2.imwrite(path+"y_"+str(imgNo)+".jpg",r_)
             
             imgNo += 1
 

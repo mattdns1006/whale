@@ -4,7 +4,7 @@ from tqdm import tqdm
 import cv2
 
 
-def getSize(desiredWidth=600):
+def getSize(desiredWidth=900):
     # To keep aspect ratio the same
     imgPaths = glob.glob("../imgs/*/w1_*")
     labelled = glob.glob("../imgs/*/l_*")
@@ -37,6 +37,7 @@ def resizeImages(labeledOrOriginal,desiredSize=(500,333),replaceCurrent = False)
 
 if __name__ == "__main__":
     desiredSize = getSize(desiredWidth=900)
-    replaceCurrent = False 
-    #resizeImages("w1",desiredSize=desiredSize,replaceCurrent=replaceCurrent) # downscale originals
+    print(desiredSize)
+    replaceCurrent = True 
+    resizeImages("w1",desiredSize=desiredSize,replaceCurrent=replaceCurrent) # downscale originals
     resizeImages("l",desiredSize=desiredSize,replaceCurrent=replaceCurrent) # downscale truth labels

@@ -33,7 +33,7 @@ def readCsv(csvPath,shuffle=False):
     if shuffle == True:
         print("Shuffling csv")
         shuffleCsvSave(csvPath)
-    csvQ = tf.train.string_input_producer([csvPath])
+    csvQ = tf.train.string_input_producer([csvPath],num_epochs=1)
     reader = tf.TextLineReader(skip_header_lines=1)
     k, v = reader.read(csvQ)
 
@@ -70,34 +70,57 @@ def loadData(csvPath,shape, batchSize=10,batchCapacity=40,nThreads=16,shuffle=Fa
 
 if __name__ == "__main__":
 
+    import ipdb
+    import time
     # Decode csv
-    csvPathTr = "/home/msmith/kaggle/whale/trainCV.csv"
-    csvPathTe = "/home/msmith/kaggle/whale/testCV.csv"
+    csvPathTe = "/home/msmith/kaggle/whale/trainCV.csv"
+    # Make mini csv for unit test
+    csv = pd.read_csv(csvPathTe)
+    csv = csv.ix[:100]
+    csv.to_csv("loadDataTest.csv",index=False)
+    csvPath = "/home/msmith/kaggle/whale/identifier/loadDataTest.csv"
     shape = [560/2,400/2,3]
-    bs = 4
-    Xtr, Ytr, YtrPaths = loadData(csvPathTr,shape=shape,batchSize=bs)
-    Xte, Yte, YtePaths = loadData(csvPathTe,shape=shape,batchSize=bs)
+    bs = 2 
+    path, label = readCsv(csvPath)
+    Xte, Yte, YtePaths = loadData(csvPath,shape=shape,batchSize=bs,batchCapacity=bs)
 
     init_op = tf.initialize_all_variables()
+    print(csv)
+    ipdb.set_trace()
+    paths = []
+    from tqdm import tqdm
+    from collections import defaultdict
 
     with tf.Session() as sess:
         sess.run(init_op)
         coord = tf.train.Coordinator()
         threads = tf.train.start_queue_runners(sess=sess,coord=coord)
 
-        count = 0
-        for i in xrange(10000):
-            x_, y_, Ypaths_ = sess.run([Xtr, Ytr, YtrPaths])
-            #show(x_,Ypaths_)
-            count += x_.shape[0]
-            print(count)
+        count = 0 
+        while True:
+            try: 
+                x_, y_, Ypaths_ = sess.run([Xte, Yte, YtePaths])
+                count += x_.shape[0]
 
-        count = 0
-        for i in xrange(10):
-            x_, y_, Ypaths_ = sess.run([Xte, Yte, YtePaths])
-            show(x_,Ypaths_)
-            count += x_.shape[0]
-            print(count)
+                for p in Ypaths_:
+                    paths.append(p[0])
+
+            except tf.errors.OutOfRangeError:
+                print("Finished epoch")
+                break
+            
+        counts = {x:paths.count(x) for x in paths}
+
+        print(counts.keys())
+        print(counts.values())
+        print(len(counts.values()))
+        print("here")
+
+        ipdb.set_trace()
+
+        coord.join(threads)
+        sess.close()
+
 
 
 

@@ -24,7 +24,7 @@ def makedirs():
     os.makedirs("data/test") # single test image 
     os.makedirs("data/allAug") # single test image 
 
-def aug(trOrTe, nAug=200, outShape=(350,350)):
+def aug(trOrTe, nAug=200, outShape=(500,500)):
     oW, oH = outShape
     tr = pd.read_csv("../trainCV.csv")
     te = pd.read_csv("../testCV.csv")

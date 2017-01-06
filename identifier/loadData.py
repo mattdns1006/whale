@@ -14,7 +14,7 @@ def show(X,Y="none"):
 def prepImg(img,shape):
     img = tf.cast(img,tf.float32)
     img = tf.mul(img,1/255.0)
-    img = tf.image.resize_images(img,shape[0],shape[1],method=0,align_corners=False)
+    img = tf.image.resize_images(img,(shape[0],shape[1]),method=0,align_corners=False)
     return img
 
 def oneHot(idx,nClasses=447):
@@ -73,10 +73,10 @@ if __name__ == "__main__":
     import ipdb
     import time
     # Decode csv
-    csvPathTe = "/home/msmith/kaggle/whale/trainCV.csv"
+    csvPathTe = "/home/msmith/kaggle/whale/identifier/trainCV.csv"
     # Make mini csv for unit test
     csv = pd.read_csv(csvPathTe)
-    csv = csv.ix[:100]
+    csv = csv
     csv.to_csv("loadDataTest.csv",index=False)
     csvPath = "/home/msmith/kaggle/whale/identifier/loadDataTest.csv"
     shape = [560/2,400/2,3]
@@ -93,21 +93,25 @@ if __name__ == "__main__":
 
     with tf.Session() as sess:
         sess.run(init_op)
+        tf.local_variables_initializer().run()
         coord = tf.train.Coordinator()
         threads = tf.train.start_queue_runners(sess=sess,coord=coord)
 
         count = 0 
-        while True:
-            try: 
+        try: 
+            while True:
                 x_, y_, Ypaths_ = sess.run([Xte, Yte, YtePaths])
                 count += x_.shape[0]
 
                 for p in Ypaths_:
                     paths.append(p[0])
-
-            except tf.errors.OutOfRangeError:
-                print("Finished epoch")
-                break
+                if coord.should_stop():
+                    break
+        except Exception,e: 
+            coord.request_stop(e)
+        finally:
+            coord.request_stop()
+            coord.join(threads)
             
         counts = {x:paths.count(x) for x in paths}
 

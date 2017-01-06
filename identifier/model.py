@@ -9,7 +9,7 @@ af = tf.nn.relu
 
 
 
-def model1(x,inDims,nClasses,nFeatsInit,nFeatsInc,keepProb):
+def model1(x,inDims,nClasses,nFeatsInit,nFeatsInc,keepProb,is_training):
 	bs, h, w, c = inDims
 	weights = {}
 	biases = {}
@@ -29,42 +29,42 @@ def model1(x,inDims,nClasses,nFeatsInit,nFeatsInc,keepProb):
 	    weights[i] = weightVar([kS, kS, inputFeats, outputFeats])
 	    biases[i] = biasVar([outputFeats])
 
-	hconv1 = af(bn((conv2d(x, weights[0]) + biases[0]),is_training=True))
+	hconv1 = af(bn((conv2d(x, weights[0]) + biases[0]),is_training=is_training))
 	hconv1 = mp(hconv1,kS=mpkS,stride=2)
 
 	feats += featsInc
 
-	hconv2 = af(bn((conv2d(hconv1, weights[1]) + biases[1]),is_training=True))
+	hconv2 = af(bn((conv2d(hconv1, weights[1]) + biases[1]),is_training=is_training))
 	hconv2 = mp(hconv2,kS=mpkS,stride=2)
 
 	feats += featsInc
 
-	hconv3 = af(bn((conv2d(hconv2, weights[2]) + biases[2]),is_training=True))
+	hconv3 = af(bn((conv2d(hconv2, weights[2]) + biases[2]),is_training=is_training))
 	hconv3 = mp(hconv3,kS=mpkS,stride=2)
 
 	feats += featsInc
 
-	hconv4 = af(bn((conv2d(hconv3, weights[3]) + biases[3]),is_training=True))
+	hconv4 = af(bn((conv2d(hconv3, weights[3]) + biases[3]),is_training=is_training))
 	hconv4 = mp(hconv4,kS=mpkS,stride=2)
 
 	feats += featsInc
 
-	hconv5 = af(bn((conv2d(hconv4, weights[4]) + biases[4]),is_training=True))
+	hconv5 = af(bn((conv2d(hconv4, weights[4]) + biases[4]),is_training=is_training))
 	hconv5 = mp(hconv5,kS=mpkS,stride=2)
 
 	feats += featsInc
 
-	hconv6 = af(bn((conv2d(hconv5, weights[5]) + biases[5]),is_training=True))
+	hconv6 = af(bn((conv2d(hconv5, weights[5]) + biases[5]),is_training=is_training))
 	hconv6 = mp(hconv6,kS=mpkS,stride=2)
 
 	feats += featsInc
 
-	hconv7 = af(bn((conv2d(hconv6, weights[6]) + biases[6]),is_training=True))
+	hconv7 = af(bn((conv2d(hconv6, weights[6]) + biases[6]),is_training=is_training))
 	hconv7 = mp(hconv7,kS=mpkS,stride=2)
 
 	#feats += featsInc
         
-	#hconv8 = af(bn((conv2d(hconv7, weights[7]) + biases[7]),is_training=True))
+	#hconv8 = af(bn((conv2d(hconv7, weights[7]) + biases[7]),is_training=is_training))
 	#hconv8 = mp(hconv8,kS=2,stride=2)
 	#feats += featsInc
 
@@ -78,8 +78,7 @@ def model1(x,inDims,nClasses,nFeatsInit,nFeatsInc,keepProb):
 	nLin1 = 128 
 	wLin1 = weightVar([nFeats,nLin1])
 	bLin1 = biasVar([nLin1])
-	linear = af(tf.matmul(flatten,wLin1) + bLin1)
-        linear = bn(linear)
+	linear = af(bn(tf.matmul(flatten,wLin1) + bLin1,is_training=is_training))
 
 	nLin2 = nClasses
 	wLin2 = weightVar([nLin1,nLin2])
@@ -91,7 +90,7 @@ def model1(x,inDims,nClasses,nFeatsInit,nFeatsInc,keepProb):
 
 	return yPred
 
-def model2(x,inDims,nClasses,nFeatsInit,nFeatsInc):
+def model2(x,inDims,nClasses,nFeatsInit,nFeatsInc,is_training):
 	bs, h, w, c = inDims
 	weights = {}
 	biases = {}
@@ -108,8 +107,8 @@ def model2(x,inDims,nClasses,nFeatsInit,nFeatsInc):
             b2 = biasVar([outputFeats])
             print(w2.get_shape())
             print(b2.get_shape())
-            hconv = af(bn((conv2d(inTensor, w1) + b1),is_training=True))
-            hconv = af(bn((conv2d(hconv, w2) + b2),is_training=True))
+            hconv = af(bn((conv2d(inTensor, w1) + b1),is_training=is_training))
+            hconv = af(bn((conv2d(hconv, w2) + b2),is_training=is_training))
             block = mp(hconv,kS=2,stride=2)
             return block
         

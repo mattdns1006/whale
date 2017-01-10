@@ -3,8 +3,9 @@ import sys
 sys.path.insert(0,"/home/msmith/misc/tfFunctions/")
 
 from layers import *
-from tensorflow.contrib.layers import layers as tfLayers
-bn = tfLayers.batch_norm
+#from tensorflow.contrib.layers import layers as tfLayers 
+#bn = tfLayers.batch_norm
+from batchNorm import batch_norm as bn # custom
 af = tf.nn.relu
 
 def model1(x,inDims,nClasses,nFeatsInit,nFeatsInc,keepProb,is_training):
@@ -27,37 +28,37 @@ def model1(x,inDims,nClasses,nFeatsInit,nFeatsInc,keepProb,is_training):
 	    weights[i] = weightVar([kS, kS, inputFeats, outputFeats])
 	    biases[i] = biasVar([outputFeats])
 
-	hconv1 = af(bn((conv2d(x, weights[0]) + biases[0]),is_training=is_training))
+	hconv1 = af(bn((conv2d(x, weights[0]) + biases[0]),name="bn0",is_training=is_training))
 	hconv1 = mp(hconv1,kS=mpkS,stride=2)
 
 	feats += featsInc
 
-	hconv2 = af(bn((conv2d(hconv1, weights[1]) + biases[1]),is_training=is_training))
+	hconv2 = af(bn((conv2d(hconv1, weights[1]) + biases[1]),name="bn1",is_training=is_training))
 	hconv2 = mp(hconv2,kS=mpkS,stride=2)
 
 	feats += featsInc
 
-	hconv3 = af(bn((conv2d(hconv2, weights[2]) + biases[2]),is_training=is_training))
+	hconv3 = af(bn((conv2d(hconv2, weights[2]) + biases[2]),name="bn2",is_training=is_training))
 	hconv3 = mp(hconv3,kS=mpkS,stride=2)
 
 	feats += featsInc
 
-	hconv4 = af(bn((conv2d(hconv3, weights[3]) + biases[3]),is_training=is_training))
+	hconv4 = af(bn((conv2d(hconv3, weights[3]) + biases[3]),name="bn3",is_training=is_training))
 	hconv4 = mp(hconv4,kS=mpkS,stride=2)
 
 	feats += featsInc
 
-	hconv5 = af(bn((conv2d(hconv4, weights[4]) + biases[4]),is_training=is_training))
+	hconv5 = af(bn((conv2d(hconv4, weights[4]) + biases[4]),name="bn4",is_training=is_training))
 	hconv5 = mp(hconv5,kS=mpkS,stride=2)
 
 	feats += featsInc
 
-	hconv6 = af(bn((conv2d(hconv5, weights[5]) + biases[5]),is_training=is_training))
+	hconv6 = af(bn((conv2d(hconv5, weights[5]) + biases[5]),name="bn5",is_training=is_training))
 	hconv6 = mp(hconv6,kS=mpkS,stride=2)
 
 	feats += featsInc
 
-	hconv7 = af(bn((conv2d(hconv6, weights[6]) + biases[6]),is_training=is_training))
+	hconv7 = af(bn((conv2d(hconv6, weights[6]) + biases[6]),name="bn6",is_training=is_training))
 	hconv7 = mp(hconv7,kS=mpkS,stride=2)
 
 	sizeBeforeReshape = hconv7.get_shape().as_list()
@@ -70,7 +71,7 @@ def model1(x,inDims,nClasses,nFeatsInit,nFeatsInc,keepProb,is_training):
 	nLin1 = 128 
 	wLin1 = weightVar([nFeats,nLin1])
 	bLin1 = biasVar([nLin1])
-	linear = af(bn(tf.matmul(flatten,wLin1) + bLin1,is_training=is_training))
+	linear = af(bn(tf.matmul(flatten,wLin1) + bLin1,name="bn7",is_training=is_training,ndim=2))
 
 	nLin2 = nClasses
 	wLin2 = weightVar([nLin1,nLin2])
@@ -78,7 +79,10 @@ def model1(x,inDims,nClasses,nFeatsInit,nFeatsInc,keepProb,is_training):
 	yPred = tf.matmul(linear,wLin2) + bLin2
 
 	for l in [x, hconv1,hconv2,hconv3,hconv4,hconv5,hconv6,hconv7,flatten,linear,yPred]:
-	    print(l.get_shape())
+            try:
+	        print(l.get_shape())
+            except AttributeError:
+                print("Doesnt exist")
 
 	return yPred
 

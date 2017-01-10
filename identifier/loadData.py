@@ -1,8 +1,10 @@
 import tensorflow as tf
 import pandas as pd
 from numpy import random as rng
-import os
+import os, sys
 import matplotlib.pyplot as plt
+sys.path.append("/home/msmith/misc/tfFunctions/")
+import augmenter
 
 def show(X,Y="none"):
     bs, h, w, c = X.shape 
@@ -11,8 +13,13 @@ def show(X,Y="none"):
     plt.title(Y)
     plt.show()
 
-def prepImg(img,shape):
+def prepImg(img,shape,augment):
     img = tf.cast(img,tf.float32)
+    if augment == True:
+        print("Augmenting")
+        img = augmenter.brightness(img)
+        #img = augmenter.contrast(img)
+        img = augmenter.crop(img,[450,450,3])
     img = tf.mul(img,1/255.0)
     img = tf.image.resize_images(img,(shape[0],shape[1]),method=0,align_corners=False)
     return img
@@ -43,7 +50,7 @@ def readCsv(csvPath,shuffle=False):
     label, path = tf.decode_csv(v,record_defaults=defaults)
     return path, label
 
-def loadData(csvPath,shape, batchSize=10,batchCapacity=40,nThreads=16,shuffle=False): 
+def loadData(csvPath,shape, batchSize=10,batchCapacity=40,nThreads=16,shuffle=False,augment=False): 
     path, label = readCsv(csvPath,shuffle=shuffle)
     labelOh = oneHot(idx=label)
     pathRe = tf.reshape(path,[1])
@@ -51,7 +58,7 @@ def loadData(csvPath,shape, batchSize=10,batchCapacity=40,nThreads=16,shuffle=Fa
     # Define subgraph to take filename, read filename, decode and enqueue
     image_bytes = tf.read_file(path)
     decoded_img = tf.image.decode_jpeg(image_bytes)
-    decoded_img = prepImg(decoded_img,shape=shape)
+    decoded_img = prepImg(decoded_img,shape=shape,augment=augment)
     imageQ = tf.FIFOQueue(128,[tf.float32,tf.float32,tf.string], shapes = [shape,[447],[1]])
     enQ_op = imageQ.enqueue([decoded_img,labelOh,pathRe])
 

@@ -73,7 +73,8 @@ if __name__ == "__main__":
     import ipdb
     import time
     # Decode csv
-    csvPathTe = "/home/msmith/kaggle/whale/identifier/trainCV.csv"
+    csvPathTr = "/home/msmith/kaggle/whale/identifier/trainCV.csv"
+    csvPathTe = "/home/msmith/kaggle/whale/identifier/testCV.csv"
     # Make mini csv for unit test
     csv = pd.read_csv(csvPathTe)
     csv = csv
@@ -82,48 +83,54 @@ if __name__ == "__main__":
     shape = [560/2,400/2,3]
     bs = 2 
     path, label = readCsv(csvPath)
-    Xte, Yte, YtePaths = loadData(csvPath,shape=shape,batchSize=bs,batchCapacity=bs)
+    Xtr, Ytr, YtrPaths = loadData(csvPathTr,shape=shape,batchSize=bs,batchCapacity=bs)
+    Xte, Yte, YtePaths = loadData(csvPathTe,shape=shape,batchSize=bs,batchCapacity=bs)
 
     init_op = tf.initialize_all_variables()
-    print(csv)
-    ipdb.set_trace()
-    paths = []
+
     from tqdm import tqdm
     from collections import defaultdict
 
-    with tf.Session() as sess:
-        sess.run(init_op)
-        tf.local_variables_initializer().run()
-        coord = tf.train.Coordinator()
-        threads = tf.train.start_queue_runners(sess=sess,coord=coord)
+    for trTe in ["train", "test"]:
+        print(trTe)
+        paths = []
+        with tf.Session() as sess:
+            sess.run(init_op)
+            tf.local_variables_initializer().run()
+            coord = tf.train.Coordinator()
+            threads = tf.train.start_queue_runners(sess=sess,coord=coord)
 
-        count = 0 
-        try: 
-            while True:
-                x_, y_, Ypaths_ = sess.run([Xte, Yte, YtePaths])
-                count += x_.shape[0]
+            count = 0 
+            try: 
+                while True:
+                    if trTe == "train":
+                        x_, y_, Ypaths_ = sess.run([Xtr, Ytr, YtrPaths])
+                    else:
+                        x_, y_, Ypaths_ = sess.run([Xte, Yte, YtePaths])
 
-                for p in Ypaths_:
-                    paths.append(p[0])
-                if coord.should_stop():
-                    break
-        except Exception,e: 
-            coord.request_stop(e)
-        finally:
-            coord.request_stop()
+                    count += x_.shape[0]
+
+                    for p in Ypaths_:
+                        paths.append(p[0])
+                    if coord.should_stop():
+                        break
+            except Exception,e: 
+                coord.request_stop(e)
+            finally:
+                coord.request_stop()
+                coord.join(threads)
+                
+            counts = {x:paths.count(x) for x in paths}
+
+            print(counts.keys())
+            print(counts.values())
+            print(len(counts.values()))
+            print("here")
+
+            ipdb.set_trace()
+
             coord.join(threads)
-            
-        counts = {x:paths.count(x) for x in paths}
-
-        print(counts.keys())
-        print(counts.values())
-        print(len(counts.values()))
-        print("here")
-
-        ipdb.set_trace()
-
-        coord.join(threads)
-        sess.close()
+            sess.close()
 
 
 

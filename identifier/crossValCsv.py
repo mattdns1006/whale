@@ -42,7 +42,6 @@ def makeCrossValidationCSVs(ratio):
     nObs = df.shape[0]
 
     exists = lambda row: os.path.exists(row.fullPath)
-    ipdb.set_trace()
     df = df.drop(df[df.apply(exists,1)==False].index) # remove paths if do not exists
     df.reset_index(drop=1,inplace=1)
     nObsAfter = df.shape[0]

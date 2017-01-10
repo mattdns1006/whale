@@ -7,8 +7,6 @@ from tensorflow.contrib.layers import layers as tfLayers
 bn = tfLayers.batch_norm
 af = tf.nn.relu
 
-
-
 def model1(x,inDims,nClasses,nFeatsInit,nFeatsInc,keepProb,is_training):
 	bs, h, w, c = inDims
 	weights = {}
@@ -67,7 +65,7 @@ def model1(x,inDims,nClasses,nFeatsInit,nFeatsInc,keepProb,is_training):
 	nFeats = sizeBeforeReshape[1]*sizeBeforeReshape[2]*sizeBeforeReshape[3]
 
 	flatten = tf.reshape(hconv7, [-1, nFeats])
-        flatten = tf.nn.dropout(flatten,keepProb)
+        #flatten = tf.nn.dropout(flatten,keepProb)
 
 	nLin1 = 128 
 	wLin1 = weightVar([nFeats,nLin1])

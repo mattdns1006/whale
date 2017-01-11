@@ -5,7 +5,9 @@ sys.path.insert(0,"/home/msmith/misc/tfFunctions/")
 from layers import *
 #from tensorflow.contrib.layers import layers as tfLayers 
 #bn = tfLayers.batch_norm
-from batchNorm import batch_norm as bn # custom
+#from batchNorm import batch_norm as bn # custom
+from batchNorm2 import bn as bn # custom
+print("using bnorm2")
 af = tf.nn.relu
 
 def model1(x,inDims,nClasses,nFeatsInit,nFeatsInc,keepProb,is_training):
@@ -71,7 +73,7 @@ def model1(x,inDims,nClasses,nFeatsInit,nFeatsInc,keepProb,is_training):
 	nLin1 = 128 
 	wLin1 = weightVar([nFeats,nLin1])
 	bLin1 = biasVar([nLin1])
-	linear = af(bn(tf.matmul(flatten,wLin1) + bLin1,name="bn7",is_training=is_training,ndim=2))
+	linear = af(bn(tf.matmul(flatten,wLin1) + bLin1,name="bn7",is_training=is_training))
 
 	nLin2 = nClasses
 	wLin2 = weightVar([nLin1,nLin2])

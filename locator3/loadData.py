@@ -6,9 +6,9 @@ from tqdm import tqdm
 import json
 import pandas as pd
 
-def show(img,coords):
-    x1,y1,x2,y2 = coords
-    cv2.circle(img,(x1,y1),13,(255,0,0),-1)
+def show(img,coords,sf):
+    x1,y1,x2,y2 = [int(x*sf) for x in coords]
+    cv2.circle(img,(x1,y1),13,(255,0,0),10)
     cv2.circle(img,(x2,y2),13,(0,0,255),-1)
     plt.imshow(img)
     plt.show()
@@ -117,9 +117,10 @@ def read(csvPath,batchSize,inSize,shuffle):
 
 if __name__ == "__main__":
     import pdb
-    makeCsv()
+    #makeCsv()
 
-    inSize = [800,800]
+    sf = 800
+    inSize = [sf,sf]
     img, x1,y1,x2,y2,w,h = read(csvPath="train.csv",batchSize=1,inSize=inSize,shuffle=True)
     init_op = tf.initialize_all_variables()
     with tf.Session() as sess:
@@ -131,10 +132,10 @@ if __name__ == "__main__":
         try:
             while True:
                 out = sess.run([img,x1,y1,x2,y2,w,h])
-                img_, coords = out[0], out[1:]
+                img_, coords = out[0], out[1:-2]
 
                 pdb.set_trace()
-                show(img_,coords)
+                show(img_[0],coords,sf=sf)
 
 
                 if coord.should_stop():

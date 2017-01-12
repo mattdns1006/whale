@@ -1,13 +1,15 @@
+import os
 import tensorflow as tf
-import cv2, glob, os
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 from tqdm import tqdm
 import json
 import pandas as pd
 
+
 def show(img,coords,sf):
-    x1,y1,x2,y2 = [int(x*sf) for x in coords]
+    x1,y1,x2,y2 = [int(x*sf) for x in coords[0]]
+
     cv2.circle(img,(x1,y1),13,(255,0,0),10)
     cv2.circle(img,(x2,y2),13,(0,0,255),-1)
     plt.imshow(img)
@@ -96,14 +98,15 @@ def read(csvPath,batchSize,inSize,shuffle):
                 tf.constant([],dtype = tf.int32),
                 tf.constant([],dtype = tf.int32)]
     path, x1, y1, x2, y2, w, h = tf.decode_csv(v,record_defaults = defaults)
-
+    coords = tf.pack([x1,y1,x2,y2])
 
     rs =  lambda x: tf.reshape(x,[1])
     x = prepImg(path,inSize)
-    path,x1,y1,x2,y2,w,h = [rs(i) for i in [path,x1,y1,x2,y2,w,h]]
-    inSize += [3]
-    Q = tf.FIFOQueue(64,[tf.float32,tf.float32,tf.float32,tf.float32,tf.float32,tf.int32,tf.int32],shapes=[inSize,[1],[1],[1],[1],[1],[1]])
-    enQ = Q.enqueue([x,x1,y1,x2,y2,w,h])
+    path = rs(path)
+    inSizeC = list(inSize)
+    inSizeC += [3]
+    Q = tf.FIFOQueue(64,[tf.float32,tf.float32],shapes=[inSizeC,[4]])
+    enQ = Q.enqueue([x,coords])
     QR = tf.train.QueueRunner(
             Q,
             [enQ]*8,
@@ -112,16 +115,16 @@ def read(csvPath,batchSize,inSize,shuffle):
             )
     tf.train.add_queue_runner(QR) 
     dQ = Q.dequeue()
-    img, x1,y1,x2,y2,w,h = tf.train.batch(dQ,batchSize,16)
-    return img, x1,y1,x2,y2,w,h
+    img,coords= tf.train.batch(dQ,batchSize,16)
+    return img, coords 
 
 if __name__ == "__main__":
-    import pdb
+    import pdb, cv2
     #makeCsv()
 
     sf = 800
     inSize = [sf,sf]
-    img, x1,y1,x2,y2,w,h = read(csvPath="train.csv",batchSize=1,inSize=inSize,shuffle=True)
+    img, coords = read(csvPath="train.csv",batchSize=1,inSize=inSize,shuffle=True)
     init_op = tf.initialize_all_variables()
     with tf.Session() as sess:
         sess.run(init_op)
@@ -131,12 +134,11 @@ if __name__ == "__main__":
         count = 0
         try:
             while True:
-                out = sess.run([img,x1,y1,x2,y2,w,h])
-                img_, coords = out[0], out[1:-2]
+                out = sess.run([img,coords])
+                x, y = out[0], out[1]
 
                 pdb.set_trace()
-                show(img_[0],coords,sf=sf)
-
+                show(x[0],y,sf=sf)
 
                 if coord.should_stop():
                     break

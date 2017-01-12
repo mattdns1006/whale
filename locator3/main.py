@@ -1,9 +1,17 @@
+import cv2
 import tensorflow as tf
 import matplotlib.pyplot as plt
 import loadData
 import sys
 from model import model0
 sys.path.append("/Users/matt/misc/tfFunctions/")
+
+def show(img,coords,sf):
+    x1,y1,x2,y2 = [int(x*sf) for x in coords]
+    cv2.circle(img,(x1,y1),2,(255,0,0),10)
+    cv2.circle(img,(x2,y2),2,(0,0,255),-1)
+    plt.imshow(img)
+    plt.show()
 
 def varSummary(var):
     with tf.name_scope('summary'):
@@ -40,10 +48,11 @@ def nodes(batchSize,inSize,trainOrTest):
 
 if __name__ == "__main__":
     import pdb
-    inSize = [256,256]
+    sf = 256
+    inSize = [sf,sf]
     batchSize = 20
     nEpochs = 40
-    load = 0
+    load = 1
 
     savePath = "models/model0.tf"
     count = 0
@@ -66,7 +75,9 @@ if __name__ == "__main__":
             threads = tf.train.start_queue_runners(sess=sess,coord=coord)
             try:
                 while True:
-                    _, summary = sess.run([trainOp,merged],feed_dict={is_training:True,learningRate:0.001})
+                    _, summary,x,y,yPred = sess.run([trainOp,merged,X,Y,YPred],feed_dict={is_training:True,learningRate:0.001})
+                    show(x[0],yPred[0],sf)
+                    pdb.set_trace()
                     count += batchSize
                     if count % 100 == 0:
                         print(count)
@@ -78,5 +89,6 @@ if __name__ == "__main__":
             finally:
                 coord.request_stop()
                 coord.join(threads)
+            print("Saving in {0}".format(savePath))
             saver.save(sess,savePath)
             sess.close()

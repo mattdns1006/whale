@@ -52,14 +52,14 @@ def denseBlock(x,inFeats,outFeats,layerNo,is_training):
     x4 = growth(inTensor=x3,toAdd=x3210,growthNumber=4)
     return x4
 
-def model0(x,is_training,nLayers=4,initFeats=16,filterSize=3):
+def model0(x,is_training,nLayers=4,initFeats=16,featsInc=16,filterSize=3):
     X = convolution2d(x,filterSize,3,initFeats)
     X = bn(X,is_training,name="bn")
     X = af(X)
     for layerNo in range(nLayers):
         if layerNo == 0:
             inFeats = initFeats 
-            outFeats = initFeats 
+            outFeats = initFeats + featsInc
         else:
             inFeats = outFeats 
             outFeats = initFeats

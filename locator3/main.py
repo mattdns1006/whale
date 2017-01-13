@@ -21,11 +21,14 @@ def varSummary(var):
 def lossFn(y,yPred):
     return tf.reduce_mean(tf.square(tf.sub(y,yPred)))
 
+def acc(y,yPred):
+    return 1-tf.reduce_mean(tf.abs(tf.sub(y,yPred)))
+
 
 def trainer(lossFn, learningRate):
     return tf.train.AdamOptimizer(learningRate).minimize(lossFn)
 
-def nodes(batchSize,inSize,trainOrTest):
+def nodes(batchSize,inSize,trainOrTest,initFeats,incFeats):
     if trainOrTest == "train":
         csvPath = "trainCV.csv"
         print("Training")
@@ -39,13 +42,15 @@ def nodes(batchSize,inSize,trainOrTest):
             inSize=inSize,
             shuffle=shuffle) #nodes
     is_training = tf.placeholder(tf.bool)
-    YPred = model0(X,is_training=is_training,nLayers=8,initFeats=16)
+    YPred = model0(X,is_training=is_training,nLayers=8,initFeats=initFeats,featsInc=incFeats)
     with tf.variable_scope("loss"):
         loss = lossFn(Y,YPred)
+    with tf.variable_scope("accuracy"):
+        accuracy = acc(Y,YPred)
     learningRate = tf.placeholder(tf.float32)
     trainOp = trainer(loss,learningRate)
     saver = tf.train.Saver()
-    return saver,X,Y,YPred,loss,is_training,trainOp,learningRate
+    return saver,X,Y,YPred,loss,accuracy,is_training,trainOp,learningRate
 
 if __name__ == "__main__":
     import pdb
@@ -53,8 +58,15 @@ if __name__ == "__main__":
     inSize = [sf,sf]
     batchSize = 20
     nEpochs = 40
-    load = 0
-
+    flags = tf.app.flags
+    FLAGS = flags.FLAGS 
+    flags.DEFINE_float("lr",0.001,"Initial learning rate.")
+    flags.DEFINE_integer("initFeats",16,"Initial number of features.")
+    flags.DEFINE_integer("incFeats",6,"Number of features growing.")
+    flags.DEFINE_integer("bS",20,"Batch size.")
+    flags.DEFINE_boolean("load",False,"Load saved model.")
+    load = FLAGS.load
+    specification = "{0}_{1}_{2}_{3}_{4}".format(sf,FLAGS.initFeats,FLAGS.incFeats,FLAGS.lr,FLAGS.bS)
     savePath = "models/model0.tf"
     trCount = teCount = 0
     for epoch in xrange(nEpochs):
@@ -63,8 +75,14 @@ if __name__ == "__main__":
             if epoch > 0 or trTe == "test":
                 load = 1
                 tf.reset_default_graph()
-            saver,X,Y,YPred,loss,is_training,trainOp,learningRate = nodes(batchSize=batchSize,inSize=inSize,trainOrTest=trTe)
-            varSummary(loss)
+            saver,X,Y,YPred,loss,accuracy,is_training,trainOp,learningRate = nodes(
+                    batchSize=FLAGS.bS,
+                    inSize=inSize,
+                    trainOrTest=trTe,
+                    initFeats=FLAGS.initFeats,
+                    incFeats=FLAGS.incFeats,
+                    )
+            [varSummary(var) for var in [loss,accuracy]]
             merged = tf.summary.merge_all()
             with tf.Session() as sess:
                 if load == 1:
@@ -72,14 +90,14 @@ if __name__ == "__main__":
                 else:
                     tf.global_variables_initializer().run()
                 tf.local_variables_initializer().run()
-                trWriter = tf.summary.FileWriter("summary/train/",sess.graph)
-                teWriter = tf.summary.FileWriter("summary/test/",sess.graph)
+                trWriter = tf.summary.FileWriter("summary/{0}/train/".format(specification),sess.graph)
+                teWriter = tf.summary.FileWriter("summary/{0}/test/".format(specification),sess.graph)
                 coord = tf.train.Coordinator()
                 threads = tf.train.start_queue_runners(sess=sess,coord=coord)
                 try:
                     while True:
                         if trTe == "train":
-                            _, summary,x,y,yPred = sess.run([trainOp,merged,X,Y,YPred],feed_dict={is_training:True,learningRate:0.001})
+                            _, summary,x,y,yPred = sess.run([trainOp,merged,X,Y,YPred],feed_dict={is_training:True,learningRate:FLAGS.lr})
                             trCount += batchSize
                             trWriter.add_summary(summary,trCount)
                         

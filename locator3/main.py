@@ -8,8 +8,8 @@ sys.path.append("/Users/matt/misc/tfFunctions/")
 
 def show(img,coords,sf):
     x1,y1,x2,y2 = [int(x*sf) for x in coords]
-    cv2.circle(img,(x1,y1),2,(255,0,0),10)
-    cv2.circle(img,(x2,y2),2,(0,0,255),-1)
+    cv2.circle(img,(x1,y1),3,(255,255,255),-1)
+    cv2.circle(img,(x2,y2),3,(0,0,255),-1)
     plt.imshow(img)
     plt.show()
 
@@ -21,14 +21,13 @@ def varSummary(var):
 def lossFn(y,yPred):
     return tf.reduce_mean(tf.square(tf.sub(y,yPred)))
 
-def acc(y,yPred):
-    return 1-tf.reduce_mean(tf.abs(tf.sub(y,yPred)))
-
+def pixelLoss(y,yPred):
+    return tf.reduce_mean(tf.abs(tf.sub(y,yPred)))*256 # regarding number of pixels
 
 def trainer(lossFn, learningRate):
     return tf.train.AdamOptimizer(learningRate).minimize(lossFn)
 
-def nodes(batchSize,inSize,trainOrTest,initFeats,incFeats):
+def nodes(batchSize,inSize,trainOrTest,initFeats,incFeats,sf,nDown):
     if trainOrTest == "train":
         csvPath = "trainCV.csv"
         print("Training")
@@ -42,34 +41,39 @@ def nodes(batchSize,inSize,trainOrTest,initFeats,incFeats):
             inSize=inSize,
             shuffle=shuffle) #nodes
     is_training = tf.placeholder(tf.bool)
-    YPred = model0(X,is_training=is_training,nLayers=8,initFeats=initFeats,featsInc=incFeats)
+    YPred = model0(X,is_training=is_training,nDown=nDown,initFeats=initFeats,featsInc=incFeats)
     with tf.variable_scope("loss"):
         loss = lossFn(Y,YPred)
         varSummary(loss)
-    with tf.variable_scope("accuracy"):
-        accuracy = acc(Y,YPred)
-        varSummary(accuracy)
+    with tf.variable_scope("pixelLoss"):
+        lossP= pixelLoss(Y,YPred)
+        varSummary(lossP)
     learningRate = tf.placeholder(tf.float32)
     trainOp = trainer(loss,learningRate)
     saver = tf.train.Saver()
-    return saver,X,Y,YPred,loss,accuracy,is_training,trainOp,learningRate
+    return saver,X,Y,YPred,loss,lossP,is_training,trainOp,learningRate
 
 if __name__ == "__main__":
     import pdb
-    sf = 256
-    inSize = [sf,sf]
+
+
     batchSize = 20
-    nEpochs = 40
+    nEpochs = 10
     flags = tf.app.flags
     FLAGS = flags.FLAGS 
     flags.DEFINE_float("lr",0.001,"Initial learning rate.")
+    flags.DEFINE_integer("sf",256,"Size of input image")
     flags.DEFINE_integer("initFeats",16,"Initial number of features.")
-    flags.DEFINE_integer("incFeats",6,"Number of features growing.")
+    flags.DEFINE_integer("incFeats",16,"Number of features growing.")
+    flags.DEFINE_integer("nDown",8,"Number of blocks going down.")
     flags.DEFINE_integer("bS",20,"Batch size.")
-    flags.DEFINE_boolean("load",False,"Load saved model.")
+    flags.DEFINE_integer("load",1,"Load saved model.")
     load = FLAGS.load
-    specification = "{0}_{1}_{2}_{3}_{4}".format(sf,FLAGS.initFeats,FLAGS.incFeats,FLAGS.lr,FLAGS.bS)
+    load = 0 
+    specification = "{0}_{1}_{2}_{3}_{4}_{5}".format(FLAGS.sf,FLAGS.initFeats,FLAGS.incFeats,FLAGS.nDown,FLAGS.lr,FLAGS.bS)
+    print("Specification = {0}".format(specification))
     savePath = "models/model0.tf"
+    inSize = [FLAGS.sf,FLAGS.sf]
     trCount = teCount = 0
     for epoch in xrange(nEpochs):
         print("{0} of {1}".format(epoch,nEpochs))
@@ -77,16 +81,19 @@ if __name__ == "__main__":
             if epoch > 0 or trTe == "test":
                 load = 1
                 tf.reset_default_graph()
-            saver,X,Y,YPred,loss,accuracy,is_training,trainOp,learningRate = nodes(
+            saver,X,Y,YPred,loss,lossP,is_training,trainOp,learningRate = nodes(
                     batchSize=FLAGS.bS,
                     inSize=inSize,
                     trainOrTest=trTe,
                     initFeats=FLAGS.initFeats,
                     incFeats=FLAGS.incFeats,
+                    nDown=FLAGS.nDown,
+                    sf = FLAGS.sf
                     )
+            gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.85)
 
             merged = tf.summary.merge_all()
-            with tf.Session() as sess:
+            with tf.Session(config=tf.ConfigProto(gpu_options=gpu_options)) as sess:
                 if load == 1:
                     print("Restoring {0}.".format(specification))
                     saver.restore(sess,savePath)
@@ -108,7 +115,7 @@ if __name__ == "__main__":
                             summary,x,y,yPred = sess.run([merged,X,Y,YPred],feed_dict={is_training:False})
                             teCount += batchSize
                             teWriter.add_summary(summary,teCount)
-                        #show(x[0],yPred[0],sf)
+                        #show(x[0],yPred[0],FLAGS.sf)
 
                         if coord.should_stop():
                             break

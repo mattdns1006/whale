@@ -52,11 +52,17 @@ def denseBlock(x,inFeats,outFeats,layerNo,is_training):
     x4 = growth(inTensor=x3,toAdd=x3210,growthNumber=4)
     return x4
 
-def model0(x,is_training,nLayers=4,initFeats=16,featsInc=16,filterSize=3):
+def dense(X,nIn,nOut):
+    wLin1 = weightVar([nIn,nOut])
+    bLin1 = biasVar([nOut])
+    dense = tf.matmul(X,wLin1) + bLin1
+    return dense
+
+def model0(x,is_training,nLayers=4,initFeats=16,featsInc=16,nDown=8,filterSize=3):
     X = convolution2d(x,filterSize,3,initFeats)
     X = bn(X,is_training,name="bn")
     X = af(X)
-    for layerNo in range(nLayers):
+    for layerNo in range(nDown):
         if layerNo == 0:
             inFeats = initFeats 
             outFeats = initFeats + featsInc
@@ -68,22 +74,22 @@ def model0(x,is_training,nLayers=4,initFeats=16,featsInc=16,filterSize=3):
             X = bn(X,is_training,name="bn_{0}".format(layerNo))
             X = af(X)
 
-            if layerNo == nLayers- 1:
+            if layerNo == nDown - 1:
                 break
 	    X = tf.nn.max_pool(X,ksize=[1,3,3,1],strides=[1,2,2,1],padding = "SAME",name="mp_".format(layerNo))
 	
     nFeats = reduce(mul,X.get_shape().as_list()[1:])
     X = tf.reshape(X,[-1,nFeats])
-    nLin1 = 16 
-    wLin1 = weightVar([nFeats,nLin1])
-    bLin1 = biasVar([nLin1])
-    linear = af(bn(tf.matmul(X,wLin1) + bLin1, name = "bnLin",is_training=is_training))
 
-    nLin2 = 4 
-    wLin2 = weightVar([nLin1,nLin2])
-    bLin2 = biasVar([nLin2])
-    out = tf.nn.sigmoid(tf.matmul(linear,wLin2) + bLin2) # output 0,1
-
+    nDense = 2
+    for layerNo in xrange(nDense):
+        if layerNo == 0:
+            nIn = nFeats
+        else:
+            nIn = 128
+        X = af(bn(dense(X,nIn,128), name = "bnLin_{0}".format(layerNo),is_training=is_training))
+        
+    out = tf.nn.sigmoid(dense(X,128,4)) # output 0,1
     return out
 
 if __name__ == "__main__":
@@ -93,7 +99,7 @@ if __name__ == "__main__":
     img, x1,y1,x2,y2,w,h = loadData.read(csvPath="train.csv",batchSize=4,inSize=inSize,shuffle=True)
     X = tf.placeholder(tf.float32,shape=[None,sf,sf,1])
     is_training = tf.placeholder(tf.bool,name="is_training")
-    Y = model0(X,is_training=is_training,nLayers=8,initFeats=16)
+    Y = model0(X,is_training=is_training,nDown=8,initFeats=16)
     pdb.set_trace()
     merged = tf.summary.merge_all()
     with tf.Session() as sess:

@@ -116,7 +116,7 @@ def read(csvPath,batchSize,inSize,shuffle):
     tf.train.add_queue_runner(QR) 
     dQ = Q.dequeue()
     img,coords= tf.train.batch(dQ,batchSize,16)
-    return img, coords 
+    return img, coords
 
 if __name__ == "__main__":
     import pdb, cv2

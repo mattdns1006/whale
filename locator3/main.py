@@ -61,9 +61,9 @@ if __name__ == "__main__":
     nEpochs = 10
     flags = tf.app.flags
     FLAGS = flags.FLAGS 
-    flags.DEFINE_float("lr",0.001,"Initial learning rate.")
+    flags.DEFINE_float("lr",0.0002,"Initial learning rate.")
     flags.DEFINE_integer("sf",256,"Size of input image")
-    flags.DEFINE_integer("initFeats",16,"Initial number of features.")
+    flags.DEFINE_integer("initFeats",64,"Initial number of features.")
     flags.DEFINE_integer("incFeats",16,"Number of features growing.")
     flags.DEFINE_integer("nDown",8,"Number of blocks going down.")
     flags.DEFINE_integer("bS",20,"Batch size.")

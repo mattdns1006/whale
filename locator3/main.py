@@ -21,12 +21,13 @@ def varSummary(var):
 def lossFn(y,yPred):
     return tf.reduce_mean(tf.square(tf.sub(y,yPred)))
 
+
 def trainer(lossFn, learningRate):
     return tf.train.AdamOptimizer(learningRate).minimize(lossFn)
 
 def nodes(batchSize,inSize,trainOrTest):
     if trainOrTest == "train":
-        csvPath = "train.csv"
+        csvPath = "trainCV.csv"
         print("Training")
         shuffle = True
     elif trainOrTest == "test":
@@ -52,43 +53,49 @@ if __name__ == "__main__":
     inSize = [sf,sf]
     batchSize = 20
     nEpochs = 40
-    load = 1
+    load = 0
 
     savePath = "models/model0.tf"
-    count = 0
+    trCount = teCount = 0
     for epoch in xrange(nEpochs):
         print("{0} of {1}".format(epoch,nEpochs))
-        if epoch > 0:
-            load = 1
-            tf.reset_default_graph()
-        saver,X,Y,YPred,loss,is_training,trainOp,learningRate = nodes(batchSize=batchSize,inSize=inSize,trainOrTest="train")
-        varSummary(loss)
-        merged = tf.summary.merge_all()
-        with tf.Session() as sess:
-            if load == 1:
-                saver.restore(sess,savePath)
-            else:
-                tf.global_variables_initializer().run()
-            tf.local_variables_initializer().run()
-            train_writer = tf.summary.FileWriter("summary/train/",sess.graph)
-            coord = tf.train.Coordinator()
-            threads = tf.train.start_queue_runners(sess=sess,coord=coord)
-            try:
-                while True:
-                    _, summary,x,y,yPred = sess.run([trainOp,merged,X,Y,YPred],feed_dict={is_training:True,learningRate:0.001})
-                    show(x[0],yPred[0],sf)
-                    pdb.set_trace()
-                    count += batchSize
-                    if count % 100 == 0:
-                        print(count)
-                    train_writer.add_summary(summary,count)
-                    if coord.should_stop():
-                        break
-            except Exception,e:
-                coord.request_stop(e)
-            finally:
-                coord.request_stop()
-                coord.join(threads)
-            print("Saving in {0}".format(savePath))
-            saver.save(sess,savePath)
-            sess.close()
+        for trTe in ["train","test"]:
+            if epoch > 0 or trTe == "test":
+                load = 1
+                tf.reset_default_graph()
+            saver,X,Y,YPred,loss,is_training,trainOp,learningRate = nodes(batchSize=batchSize,inSize=inSize,trainOrTest=trTe)
+            varSummary(loss)
+            merged = tf.summary.merge_all()
+            with tf.Session() as sess:
+                if load == 1:
+                    saver.restore(sess,savePath)
+                else:
+                    tf.global_variables_initializer().run()
+                tf.local_variables_initializer().run()
+                trWriter = tf.summary.FileWriter("summary/train/",sess.graph)
+                teWriter = tf.summary.FileWriter("summary/test/",sess.graph)
+                coord = tf.train.Coordinator()
+                threads = tf.train.start_queue_runners(sess=sess,coord=coord)
+                try:
+                    while True:
+                        if trTe == "train":
+                            _, summary,x,y,yPred = sess.run([trainOp,merged,X,Y,YPred],feed_dict={is_training:True,learningRate:0.001})
+                            trCount += batchSize
+                            trWriter.add_summary(summary,trCount)
+                        
+                        else:
+                            summary,x,y,yPred = sess.run([merged,X,Y,YPred],feed_dict={is_training:False})
+                            teCount += batchSize
+                            teWriter.add_summary(summary,teCount)
+                        #show(x[0],yPred[0],sf)
+
+                        if coord.should_stop():
+                            break
+                except Exception,e:
+                    coord.request_stop(e)
+                finally:
+                    coord.request_stop()
+                    coord.join(threads)
+                print("Saving in {0}".format(savePath))
+                saver.save(sess,savePath)
+                sess.close()

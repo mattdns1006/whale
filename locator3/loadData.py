@@ -105,18 +105,18 @@ def read(csvPath,batchSize,inSize,shuffle):
     path = rs(path)
     inSizeC = list(inSize)
     inSizeC += [3]
-    Q = tf.FIFOQueue(64,[tf.float32,tf.float32],shapes=[inSizeC,[4]])
-    enQ = Q.enqueue([x,coords])
+    Q = tf.FIFOQueue(128,[tf.float32,tf.float32,tf.string],shapes=[inSizeC,[4],[1]])
+    enQ = Q.enqueue([x,coords,path])
     QR = tf.train.QueueRunner(
             Q,
-            [enQ]*8,
+            [enQ]*16,
             Q.close(),
             Q.close(cancel_pending_enqueues=True)
             )
     tf.train.add_queue_runner(QR) 
     dQ = Q.dequeue()
-    img,coords= tf.train.batch(dQ,batchSize,16)
-    return img, coords
+    img,coords, imgPath = tf.train.batch(dQ,batchSize,16)
+    return img, coords, imgPath 
 
 if __name__ == "__main__":
     import pdb, cv2

@@ -45,8 +45,10 @@ def nodes(batchSize,inSize,trainOrTest,initFeats,incFeats):
     YPred = model0(X,is_training=is_training,nLayers=8,initFeats=initFeats,featsInc=incFeats)
     with tf.variable_scope("loss"):
         loss = lossFn(Y,YPred)
+        varSummary(loss)
     with tf.variable_scope("accuracy"):
         accuracy = acc(Y,YPred)
+        varSummary(accuracy)
     learningRate = tf.placeholder(tf.float32)
     trainOp = trainer(loss,learningRate)
     saver = tf.train.Saver()
@@ -82,10 +84,11 @@ if __name__ == "__main__":
                     initFeats=FLAGS.initFeats,
                     incFeats=FLAGS.incFeats,
                     )
-            [varSummary(var) for var in [loss,accuracy]]
+
             merged = tf.summary.merge_all()
             with tf.Session() as sess:
                 if load == 1:
+                    print("Restoring {0}.".format(specification))
                     saver.restore(sess,savePath)
                 else:
                     tf.global_variables_initializer().run()

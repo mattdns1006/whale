@@ -42,7 +42,7 @@ def dense(X,nIn,nOut):
     dense = tf.matmul(X,wLin1) + bLin1
     return dense
 
-def model0(x,is_training,nLayers=4,initFeats=16,featsInc=16,nDown=8,filterSize=3):
+def model0(x,is_training,nLayers=4,initFeats=16,featsInc=16,nDown=8,filterSize=3,nDense=2,denseFeats=128):
     X = convolution2d(x,3,initFeats,filterSize)
     X = bn(X,is_training,name="bn")
     X = af(X)
@@ -65,15 +65,14 @@ def model0(x,is_training,nLayers=4,initFeats=16,featsInc=16,nDown=8,filterSize=3
     nFeats = reduce(mul,X.get_shape().as_list()[1:])
     X = tf.reshape(X,[-1,nFeats])
 
-    nDense = 2
     for layerNo in xrange(nDense):
         if layerNo == 0:
             nIn = nFeats
         else:
-            nIn = 128
-        X = af(bn(dense(X,nIn,128), name = "bnLin_{0}".format(layerNo),is_training=is_training))
+            nIn = denseFeats
+        X = af(bn(dense(X,nIn,denseFeats), name = "bnLin_{0}".format(layerNo),is_training=is_training))
         
-    out = tf.nn.sigmoid(dense(X,128,4)) # output 0,1
+    out = tf.nn.sigmoid(dense(X,denseFeats,4)) # output 0,1
     return out
 
 def denseBlock(x,inFeats,outFeats,filterSize,is_training):

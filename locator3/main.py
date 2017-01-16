@@ -32,7 +32,7 @@ def pixelLoss(y,yPred):
 def trainer(lossFn, learningRate):
     return tf.train.AdamOptimizer(learningRate).minimize(lossFn)
 
-def nodes(batchSize,inSize,trainOrTest,initFeats,incFeats,sf,nDown):
+def nodes(batchSize,inSize,trainOrTest,initFeats,incFeats,sf,nDown,nDense):
     if trainOrTest == "train":
         csvPath = "trainCV.csv"
         print("Training")
@@ -50,7 +50,7 @@ def nodes(batchSize,inSize,trainOrTest,initFeats,incFeats,sf,nDown):
             inSize=inSize,
             shuffle=shuffle) #nodes
     is_training = tf.placeholder(tf.bool)
-    YPred = model0(X,is_training=is_training,nDown=nDown,initFeats=initFeats,featsInc=incFeats)
+    YPred = model0(X,is_training=is_training,nDown=nDown,initFeats=initFeats,featsInc=incFeats,nDense=nDense,denseFeats=128)
     with tf.variable_scope("loss"):
         loss = lossFn(Y,YPred)
         varSummary(loss)
@@ -64,7 +64,7 @@ def nodes(batchSize,inSize,trainOrTest,initFeats,incFeats,sf,nDown):
 
 if __name__ == "__main__":
     import pdb
-    nEpochs = 10
+    nEpochs = 20
     flags = tf.app.flags
     FLAGS = flags.FLAGS 
     flags.DEFINE_float("lr",0.0001,"Initial learning rate.")
@@ -72,6 +72,7 @@ if __name__ == "__main__":
     flags.DEFINE_integer("initFeats",64,"Initial number of features.")
     flags.DEFINE_integer("incFeats",16,"Number of features growing.")
     flags.DEFINE_integer("nDown",6,"Number of blocks going down.")
+    flags.DEFINE_integer("nDense",2,"Number of dense layers.")
     flags.DEFINE_integer("bS",20,"Batch size.")
     flags.DEFINE_integer("load",0,"Load saved model.")
     flags.DEFINE_integer("fit",0,"Load saved model.")
@@ -79,9 +80,12 @@ if __name__ == "__main__":
     load = FLAGS.load
     if FLAGS.fit == 1:
         load = 1
-    specification = "{0}_{1}_{2}_{3}_{4}_{5}".format(FLAGS.sf,FLAGS.initFeats,FLAGS.incFeats,FLAGS.nDown,FLAGS.lr,FLAGS.bS)
+    specification = "{0}_{1}_{2}_{3}_{4}_{5}_{6}_{7}".format(FLAGS.sf,FLAGS.initFeats,FLAGS.incFeats,FLAGS.nDown,FLAGS.nDown,FLAGS.nDense,FLAGS.lr,FLAGS.bS)
     print("Specification = {0}".format(specification))
-    savePath = "models/model0.tf"
+    modelDir = "models/" + specification + "/"
+    if not os.path.exists(modelDir):
+        os.mkdir(modelDir)
+    savePath = modelDir + "model.tf"
 
     inSize = [FLAGS.sf,FLAGS.sf]
     trCount = teCount = 0
@@ -99,6 +103,7 @@ if __name__ == "__main__":
                         initFeats=FLAGS.initFeats,
                         incFeats=FLAGS.incFeats,
                         nDown=FLAGS.nDown,
+                        nDense =FLAGS.nDense,
                         sf = FLAGS.sf
                         )
                 gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.85)
@@ -138,7 +143,9 @@ if __name__ == "__main__":
                     saver.save(sess,savePath)
                     sess.close()
     else:
-        fitBs
+        import pandas as pd
+        fitBs = 30
+        saveShow = 0
         fittedPath = "fitted/"+specification + "/"
         print("Saving files in {0}".format(fittedPath))
         if not os.path.exists(fittedPath):
@@ -150,10 +157,13 @@ if __name__ == "__main__":
                 initFeats=FLAGS.initFeats,
                 incFeats=FLAGS.incFeats,
                 nDown=FLAGS.nDown,
+                nDense=FLAGS.nDense,
                 sf = FLAGS.sf
                 )
         with tf.Session() as sess:
             count = 0
+            filePath = np.empty((1,1))
+            predictions = np.empty((1,4))
             print("Restoring {0}.".format(specification))
             saver.restore(sess,savePath)
             tf.local_variables_initializer().run()
@@ -164,9 +174,12 @@ if __name__ == "__main__":
                     xPath_, x,y,yPred = sess.run([xPath,X,Y,YPred],feed_dict={is_training:False})
                     count += fitBs 
                     bS = x.shape[0]
-                    for i in xrange(bS):
-                        fp = xPath_[i][0].split("/")[-1]
-                        show(x[i],yPred[i],FLAGS.sf,1,fittedPath + fp)
+                    if saveShow == 1:
+                        for i in xrange(bS):
+                            fp = xPath_[i][0].split("/")[-1]
+                            show(x[i],yPred[i],FLAGS.sf,1,fittedPath + fp)
+                    predictions = np.vstack((predictions,yPred))
+                    filePath = np.vstack((filePath,xPath_))
                     if count % 200 == 0:
                         print(count)
                     if coord.should_stop():
@@ -176,5 +189,9 @@ if __name__ == "__main__":
             finally:
                 coord.request_stop()
                 coord.join(threads)
+            fittedCoords = pd.DataFrame(np.hstack((filePath,predictions)))
+            fittedCoords.columns = ["path","x1","y1","x2","y2"]
+            fittedCoords.to_csv("fitted.csv",index = 0)
+            pdb.set_trace()
             sess.close()
                             

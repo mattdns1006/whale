@@ -57,13 +57,13 @@ def nodes(level,batchSize,inSize,trainOrTest,initFeats,incFeats,sf,nDown,nDense)
             batchSize=batchSize,
             inSize=inSize,
             shuffle=shuffle) #nodes
-    x1,y1,x2,y2 = tf.unpack(Y,axis=1)
-    x1e,y1e,x2e,y2e = tf.unpack(tf.add(Y,0.001),axis=1)
+    x1,y1,x2,y2 = tf.unpack(tf.add(Y,-0.01),axis=1)
+    x1e,y1e,x2e,y2e = tf.unpack(tf.add(Y,0.02),axis=1)
     box1 = tf.pack([x1,y1,x1e,y1e],axis=1)
     box2 = tf.pack([x2,y2,x2e,y2e],axis=1)
-    boxes = tf.stack([box1,box2],1)
-    XBounding = tf.image.draw_bounding_boxes(X,boxes)
-    imgSummary("X",XBounding)
+    box1 = tf.reshape(box1,[batchSize,1,4])
+    XBounding = tf.image.draw_bounding_boxes(X,box1)
+    #imgSummary("X",X)
     is_training = tf.placeholder(tf.bool)
     YPred = model0(X,is_training=is_training,nDown=nDown,initFeats=initFeats,featsInc=incFeats,nDense=nDense,denseFeats=128)
     with tf.variable_scope("loss"):
@@ -83,15 +83,16 @@ if __name__ == "__main__":
     flags = tf.app.flags
     FLAGS = flags.FLAGS 
     flags.DEFINE_integer("level",0,"Two level learning one at high context = 0 (full image) and one on cropped image = 1.")
-    flags.DEFINE_float("lr",0.0001,"Initial learning rate.")
+    flags.DEFINE_float("lr",0.0003,"Initial learning rate.")
     flags.DEFINE_integer("sf",256,"Size of input image")
     flags.DEFINE_integer("initFeats",64,"Initial number of features.")
-    flags.DEFINE_integer("incFeats",16,"Number of features growing.")
+    flags.DEFINE_integer("incFeats",0,"Number of features growing.")
     flags.DEFINE_integer("nDown",6,"Number of blocks going down.")
     flags.DEFINE_integer("nDense",4,"Number of dense layers.")
     flags.DEFINE_integer("bS",20,"Batch size.")
     flags.DEFINE_integer("load",0,"Load saved model.")
     flags.DEFINE_integer("fit",0,"Load saved model.")
+    flags.DEFINE_integer("show",0,"Show for sanity.")
     batchSize = FLAGS.bS
     load = FLAGS.load
     if FLAGS.fit == 1:
@@ -144,6 +145,11 @@ if __name__ == "__main__":
                                 _, summary,x,y,yPred = sess.run([trainOp,merged,X,Y,YPred],feed_dict={is_training:True,learningRate:FLAGS.lr})
                                 trCount += batchSize
                                 trWriter.add_summary(summary,trCount)
+                                
+                                if FLAGS.show == 1:
+                                    for i in range(x.shape[0]):
+                                        show(x[i],yPred[i],FLAGS.sf,0,"none")
+                                        pdb.set_trace()
                             
                             else:
                                 summary,x,y,yPred = sess.run([merged,X,Y,YPred],feed_dict={is_training:False})
@@ -158,7 +164,9 @@ if __name__ == "__main__":
                         coord.request_stop()
                         coord.join(threads)
                     print("Saving in {0}".format(savePath))
-                    saver.save(sess,savePath)
+                    if trTe == "train":
+                        print("Saving")
+                        saver.save(sess,savePath)
                     sess.close()
     else:
         import pandas as pd

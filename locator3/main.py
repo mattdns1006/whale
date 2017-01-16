@@ -22,6 +22,8 @@ def varSummary(var):
     with tf.name_scope('summary'):
         tf.summary.scalar('mean', var)
         tf.summary.histogram('mean', var)
+def imgSummary(name,img):
+    tf.summary.image(name,img)
 
 def lossFn(y,yPred):
     return tf.sqrt(tf.reduce_mean(tf.square(tf.sub(y,yPred))))
@@ -37,14 +39,14 @@ def nodes(level,batchSize,inSize,trainOrTest,initFeats,incFeats,sf,nDown,nDense)
         if level == 0:
             csvPath = "trainCV.csv"
         else:
-            csvPath = "cropped/fitted/trainCV.csv"
-        print("Training")
+            csvPath = "cropped/truth/trainCV.csv"
+        print("Training on level = {0}".format(level))
         shuffle = True
     elif trainOrTest == "test":
         if level == 0:
             csvPath = "testCV.csv"
         else:
-            csvPath = "cropped/fitted/testCV.csv"
+            csvPath = "cropped/truth/testCV.csv"
         print("Testing")
         shuffle = False
     elif trainOrTest == "fit":
@@ -55,6 +57,13 @@ def nodes(level,batchSize,inSize,trainOrTest,initFeats,incFeats,sf,nDown,nDense)
             batchSize=batchSize,
             inSize=inSize,
             shuffle=shuffle) #nodes
+    x1,y1,x2,y2 = tf.unpack(Y,axis=1)
+    x1e,y1e,x2e,y2e = tf.unpack(tf.add(Y,0.001),axis=1)
+    box1 = tf.pack([x1,y1,x1e,y1e],axis=1)
+    box2 = tf.pack([x2,y2,x2e,y2e],axis=1)
+    boxes = tf.stack([box1,box2],1)
+    XBounding = tf.image.draw_bounding_boxes(X,boxes)
+    imgSummary("X",XBounding)
     is_training = tf.placeholder(tf.bool)
     YPred = model0(X,is_training=is_training,nDown=nDown,initFeats=initFeats,featsInc=incFeats,nDense=nDense,denseFeats=128)
     with tf.variable_scope("loss"):
@@ -73,7 +82,7 @@ if __name__ == "__main__":
     nEpochs = 20
     flags = tf.app.flags
     FLAGS = flags.FLAGS 
-    flags.DEFINE_float("level",0,"Two level learning one at high context = 0 (full image) and one on cropped image = 1.")
+    flags.DEFINE_integer("level",0,"Two level learning one at high context = 0 (full image) and one on cropped image = 1.")
     flags.DEFINE_float("lr",0.0001,"Initial learning rate.")
     flags.DEFINE_integer("sf",256,"Size of input image")
     flags.DEFINE_integer("initFeats",64,"Initial number of features.")
@@ -89,8 +98,8 @@ if __name__ == "__main__":
         load = 1
     specification = "{0}_{1}_{2}_{3}_{4}_{5}_{6}_{7}".format(FLAGS.sf,FLAGS.initFeats,FLAGS.incFeats,FLAGS.nDown,FLAGS.nDown,FLAGS.nDense,FLAGS.lr,FLAGS.bS)
     print("Specification = {0}".format(specification))
-    modelDir = "models/" + FLAGS.level +  "/" + specification + "/"
-    if not fit:
+    modelDir = "models/" + str(FLAGS.level) +  "/" + specification + "/"
+    if not FLAGS.fit:
         if not os.path.exists(modelDir):
             os.mkdir(modelDir)
     savePath = modelDir + "model.tf"
@@ -105,7 +114,7 @@ if __name__ == "__main__":
                     load = 1
                     tf.reset_default_graph()
                 saver,xPath,X,Y,YPred,loss,lossP,is_training,trainOp,learningRate = nodes(
-                        level = FLAGS.level
+                        level = FLAGS.level,
                         batchSize=FLAGS.bS,
                         inSize=inSize,
                         trainOrTest=trTe,
@@ -125,8 +134,8 @@ if __name__ == "__main__":
                     else:
                         tf.global_variables_initializer().run()
                     tf.local_variables_initializer().run()
-                    trWriter = tf.summary.FileWriter("summary/{0}/train/".format(specification),sess.graph)
-                    teWriter = tf.summary.FileWriter("summary/{0}/test/".format(specification),sess.graph)
+                    trWriter = tf.summary.FileWriter("summary/{0}/{1}/train/".format(FLAGS.level,specification),sess.graph)
+                    teWriter = tf.summary.FileWriter("summary/{0}/{1}/test/".format(FLAGS.level,specification),sess.graph)
                     coord = tf.train.Coordinator()
                     threads = tf.train.start_queue_runners(sess=sess,coord=coord)
                     try:

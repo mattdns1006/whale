@@ -32,14 +32,20 @@ def pixelLoss(y,yPred):
 def trainer(lossFn, learningRate):
     return tf.train.AdamOptimizer(learningRate).minimize(lossFn)
 
-def nodes(batchSize,inSize,trainOrTest,initFeats,incFeats,sf,nDown,nDense):
+def nodes(level,batchSize,inSize,trainOrTest,initFeats,incFeats,sf,nDown,nDense):
     if trainOrTest == "train":
-        csvPath = "trainCV.csv"
+        if level == 0:
+            csvPath = "trainCV.csv"
+        else:
+            csvPath = "cropped/fitted/trainCV.csv"
         print("Training")
         shuffle = True
     elif trainOrTest == "test":
+        if level == 0:
+            csvPath = "testCV.csv"
+        else:
+            csvPath = "cropped/fitted/testCV.csv"
         print("Testing")
-        csvPath = "testCV.csv"
         shuffle = False
     elif trainOrTest == "fit":
         print("Fitting")
@@ -67,12 +73,13 @@ if __name__ == "__main__":
     nEpochs = 20
     flags = tf.app.flags
     FLAGS = flags.FLAGS 
+    flags.DEFINE_float("level",0,"Two level learning one at high context = 0 (full image) and one on cropped image = 1.")
     flags.DEFINE_float("lr",0.0001,"Initial learning rate.")
     flags.DEFINE_integer("sf",256,"Size of input image")
     flags.DEFINE_integer("initFeats",64,"Initial number of features.")
     flags.DEFINE_integer("incFeats",16,"Number of features growing.")
     flags.DEFINE_integer("nDown",6,"Number of blocks going down.")
-    flags.DEFINE_integer("nDense",2,"Number of dense layers.")
+    flags.DEFINE_integer("nDense",4,"Number of dense layers.")
     flags.DEFINE_integer("bS",20,"Batch size.")
     flags.DEFINE_integer("load",0,"Load saved model.")
     flags.DEFINE_integer("fit",0,"Load saved model.")
@@ -82,9 +89,10 @@ if __name__ == "__main__":
         load = 1
     specification = "{0}_{1}_{2}_{3}_{4}_{5}_{6}_{7}".format(FLAGS.sf,FLAGS.initFeats,FLAGS.incFeats,FLAGS.nDown,FLAGS.nDown,FLAGS.nDense,FLAGS.lr,FLAGS.bS)
     print("Specification = {0}".format(specification))
-    modelDir = "models/" + specification + "/"
-    if not os.path.exists(modelDir):
-        os.mkdir(modelDir)
+    modelDir = "models/" + FLAGS.level +  "/" + specification + "/"
+    if not fit:
+        if not os.path.exists(modelDir):
+            os.mkdir(modelDir)
     savePath = modelDir + "model.tf"
 
     inSize = [FLAGS.sf,FLAGS.sf]
@@ -97,6 +105,7 @@ if __name__ == "__main__":
                     load = 1
                     tf.reset_default_graph()
                 saver,xPath,X,Y,YPred,loss,lossP,is_training,trainOp,learningRate = nodes(
+                        level = FLAGS.level
                         batchSize=FLAGS.bS,
                         inSize=inSize,
                         trainOrTest=trTe,

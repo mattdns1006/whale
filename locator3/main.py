@@ -36,22 +36,16 @@ def trainer(lossFn, learningRate):
 
 def nodes(level,batchSize,inSize,trainOrTest,initFeats,incFeats,sf,nDown,nDense):
     if trainOrTest == "train":
-        if level == 0:
-            csvPath = "trainCV.csv"
-        else:
-            csvPath = "cropped/truth/trainCV.csv"
+        csvPath = "data/{0}/trainCV.csv".format(level)
         print("Training on level = {0}".format(level))
         shuffle = True
     elif trainOrTest == "test":
-        if level == 0:
-            csvPath = "testCV.csv"
-        else:
-            csvPath = "cropped/truth/testCV.csv"
-        print("Testing")
+        csvPath = "data/{0}/testCV.csv".format(level)
+        print("Testing on level = {0}".format(level))
         shuffle = False
     elif trainOrTest == "fit":
         print("Fitting")
-        csvPath = "train.csv"
+        csvPath = "data/{0}/train.csv".format(level)
         shuffle = True
     X,Y,xPath = loadData.read(csvPath=csvPath,
             batchSize=batchSize,
@@ -83,7 +77,8 @@ if __name__ == "__main__":
     flags = tf.app.flags
     FLAGS = flags.FLAGS 
     flags.DEFINE_integer("level",0,"Two level learning one at high context = 0 (full image) and one on cropped image = 1.")
-    flags.DEFINE_float("lr",0.0003,"Initial learning rate.")
+    flags.DEFINE_float("lr",0.0001,"Initial learning rate.")
+    flags.DEFINE_float("lrD",1.00,"Learning rate division rate applied every epoch. (DEFAULT - nothing happens)")
     flags.DEFINE_integer("sf",256,"Size of input image")
     flags.DEFINE_integer("initFeats",64,"Initial number of features.")
     flags.DEFINE_integer("incFeats",0,"Number of features growing.")
@@ -91,7 +86,8 @@ if __name__ == "__main__":
     flags.DEFINE_integer("nDense",4,"Number of dense layers.")
     flags.DEFINE_integer("bS",20,"Batch size.")
     flags.DEFINE_integer("load",0,"Load saved model.")
-    flags.DEFINE_integer("fit",0,"Load saved model.")
+    flags.DEFINE_integer("fit",0,"Fit training data.")
+    flags.DEFINE_integer("fitTest",0,"Fit actual test data.")
     flags.DEFINE_integer("show",0,"Show for sanity.")
     batchSize = FLAGS.bS
     load = FLAGS.load
@@ -164,6 +160,9 @@ if __name__ == "__main__":
                         coord.request_stop()
                         coord.join(threads)
                     print("Saving in {0}".format(savePath))
+                    lrC = FLAGS.lr
+                    FLAGS.lr /= FLAGS.lrD
+                    print("Dropped learning rate from {0} to {1}".format(lrC,FLAGS.lr))
                     if trTe == "train":
                         print("Saving")
                         saver.save(sess,savePath)
@@ -172,11 +171,12 @@ if __name__ == "__main__":
         import pandas as pd
         fitBs = 30
         saveShow = 0
-        fittedPath = "fitted/"+specification + "/"
+        fittedPath = "fitted/"+ str(FLAGS.level) + "/" + specification + "/"
         print("Saving files in {0}".format(fittedPath))
         if not os.path.exists(fittedPath):
             os.mkdir(fittedPath)
         saver,xPath,X,Y,YPred,loss,lossP,is_training,trainOp,learningRate = nodes(
+                level = FLAGS.level,
                 batchSize=fitBs,
                 inSize=inSize,
                 trainOrTest="fit",
@@ -200,8 +200,9 @@ if __name__ == "__main__":
                     xPath_, x,y,yPred = sess.run([xPath,X,Y,YPred],feed_dict={is_training:False})
                     count += fitBs 
                     bS = x.shape[0]
-                    if saveShow == 1:
+                    if FLAGS.show == 1:
                         for i in xrange(bS):
+
                             fp = xPath_[i][0].split("/")[-1]
                             show(x[i],yPred[i],FLAGS.sf,1,fittedPath + fp)
                     predictions = np.vstack((predictions,yPred))
@@ -217,7 +218,7 @@ if __name__ == "__main__":
                 coord.join(threads)
             fittedCoords = pd.DataFrame(np.hstack((filePath,predictions)))
             fittedCoords.columns = ["path","x1","y1","x2","y2"]
-            fittedCoords.to_csv("fitted.csv",index = 0)
+            fittedCoords.to_csv(fittedPath + "fitted.csv",index = 0)
             pdb.set_trace()
             sess.close()
                             

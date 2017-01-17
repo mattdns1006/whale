@@ -105,7 +105,7 @@ def read(csvPath,batchSize,inSize,shuffle):
     path = rs(path)
     inSizeC = list(inSize)
     inSizeC += [3]
-    Q = tf.FIFOQueue(64,[tf.float32,tf.float32,tf.string],shapes=[inSizeC,[4],[1]])
+    Q = tf.FIFOQueue(32,[tf.float32,tf.float32,tf.string],shapes=[inSizeC,[4],[1]])
     enQ = Q.enqueue([x,coords,path])
     QR = tf.train.QueueRunner(
             Q,

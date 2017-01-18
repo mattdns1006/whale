@@ -26,12 +26,12 @@ def show(X,Y,yPred, name= "",figsize=(10,10)):
 def mse(y,yPred):
     return tf.reduce_mean(tf.square(tf.sub(y,yPred)))
 
-def trainer(loss,learningRate,momentum=0.95):
+def trainer(loss,learningRate,momentum=0.90):
         return tf.train.AdamOptimizer(learningRate).minimize(loss)
 
 if __name__ == "__main__":
 	import ipdb
-	inShape = [800,1100,3]
+	inShape = [256,256,3]
 	outShape = [50,69,3]
         batchSize = 4
         nFeatsInc = 0 

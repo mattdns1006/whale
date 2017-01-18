@@ -5,7 +5,7 @@ import layers as layers
 from tensorflow.contrib.layers import layers as tfLayers
 from keras.layers.normalization import BatchNormalization
 
-def model1(x,nFeats,nFeatsInc=0):
+def model1(x,nFeats,nFeatsInc=64):
     conv = layers.conv2d
     af = tf.nn.relu
     af = tf.tanh
@@ -24,7 +24,7 @@ def model1(x,nFeats,nFeatsInc=0):
             nIn = 3 
         elif i == nLayers-1:
             feats = 3
-        W[i] = layers.weightVar([3,3,nIn,feats],stddev=0.05)
+        W[i] = layers.weightVar([3,3,nIn,feats],stddev=0.35)
         B[i] = layers.biasVar([feats])
 
         nIn = feats
@@ -46,14 +46,6 @@ def model1(x,nFeats,nFeatsInc=0):
     #hConv5 = mp(hConv5,2,2)
 
     #hConv6 = bn(conv(hConv5,W[5]) + B[5],is_training=True)
-
-   # 
-   # W = layers.weightVar([3,3,3,3])
-   # B = layers.biasVar([3])
-   # os = getShape(hConv6)
-   # os[1]*=2
-   # os[2]*=2
-   # up1 = up(hConv6,W,os,2)
 
     yPred = tf.nn.sigmoid(hConv5)
     

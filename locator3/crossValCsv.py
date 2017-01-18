@@ -94,7 +94,7 @@ if __name__ == "__main__":
     except IndexError:
         print("Split argument not specified, using default ratio of %f." % 0.8)
         ratio = 0.8
-    makePointsCsv()
+    #makePointsCsv()
     makeTestCSV("data/0/test.csv")
     makeTestCSV("data/1/test.csv")
     makeCrossValidationCSVs(ratio,"data/0/")

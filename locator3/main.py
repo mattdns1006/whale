@@ -28,8 +28,9 @@ def imgSummary(name,img):
 def lossFn(y,yPred):
     return tf.sqrt(tf.reduce_mean(tf.square(tf.sub(y,yPred))))
 
-def pixelLoss(y,yPred):
-    return tf.reduce_mean(tf.abs(tf.sub(y,yPred)))*256 # regarding number of pixels
+def pixelLoss(y,yPred,sf):
+    normalized = (256.0/sf)
+    return tf.reduce_mean(tf.abs(tf.sub(y,yPred)))*256*normalized # regarding number of pixels
 
 def trainer(lossFn, learningRate):
     return tf.train.AdamOptimizer(learningRate).minimize(lossFn)
@@ -43,9 +44,16 @@ def nodes(level,batchSize,inSize,trainOrTest,initFeats,incFeats,sf,nDown,nDense)
         csvPath = "data/{0}/testCV.csv".format(level)
         print("Testing on level = {0}".format(level))
         shuffle = False
-    elif trainOrTest == "fit":
-        print("Fitting")
+    elif trainOrTest == "fitTrain":
+        print("Fitting training data")
         csvPath = "data/{0}/train.csv".format(level)
+        shuffle = True
+    elif trainOrTest == "fitTest":
+        print("Fitting on test.")
+        if level == 1:
+            csvPath = "fitted/0/256_64_0_6_6_4_3.1e-05_20/test/cropped/train.csv"
+        else:
+            csvPath = "data/{0}/test.csv".format(level)
         shuffle = True
     X,Y,xPath = loadData.read(csvPath=csvPath,
             batchSize=batchSize,
@@ -64,7 +72,7 @@ def nodes(level,batchSize,inSize,trainOrTest,initFeats,incFeats,sf,nDown,nDense)
         loss = lossFn(Y,YPred)
         varSummary(loss)
     with tf.variable_scope("pixelLoss"):
-        lossP= pixelLoss(Y,YPred)
+        lossP= pixelLoss(Y,YPred,sf)
         varSummary(lossP)
     learningRate = tf.placeholder(tf.float32)
     trainOp = trainer(loss,learningRate)
@@ -89,12 +97,12 @@ if __name__ == "__main__":
     flags.DEFINE_integer("fit",0,"Fit training data.")
     flags.DEFINE_integer("fitTest",0,"Fit actual test data.")
     flags.DEFINE_integer("show",0,"Show for sanity.")
-    flags.DEFINE_integer("nEpochs",20,"Number of epochs to train for.")
+    flags.DEFINE_integer("nEpochs",30,"Number of epochs to train for.")
     batchSize = FLAGS.bS
     load = FLAGS.load
-    if FLAGS.fit == 1:
+    if FLAGS.fit == 1 or FLAGS.fitTest == 1:
         load = 1
-    specification = "{0}_{1}_{2}_{3}_{4}_{5}_{6}_{7}".format(FLAGS.sf,FLAGS.initFeats,FLAGS.incFeats,FLAGS.nDown,FLAGS.nDown,FLAGS.nDense,FLAGS.lr,FLAGS.bS)
+    specification = "{0}_{1}_{2}_{3}_{4}_{5}_{6:.6f}_{7}".format(FLAGS.sf,FLAGS.initFeats,FLAGS.incFeats,FLAGS.nDown,FLAGS.nDown,FLAGS.nDense,FLAGS.lr,FLAGS.bS)
     print("Specification = {0}".format(specification))
     modelDir = "models/" + str(FLAGS.level) +  "/" + specification + "/"
     if not FLAGS.fit:
@@ -104,10 +112,15 @@ if __name__ == "__main__":
 
     inSize = [FLAGS.sf,FLAGS.sf]
     trCount = teCount = 0
-    if not FLAGS.fit:
+    if FLAGS.fit == 0 and FLAGS.fitTest == 0:
         for epoch in xrange(FLAGS.nEpochs):
-            print("{0} of {1}".format(epoch,nEpochs))
-            for trTe in ["train","test"]:
+            print("{0} of {1}".format(epoch,FLAGS.nEpochs))
+            if epoch == FLAGS.nEpochs - 1:
+                print("Testing this time round")
+                what = ["train","test"]
+            else:
+                what = ["train"]
+            for trTe in what:
                 if epoch > 0 or trTe == "test":
                     load = 1
                     tf.reset_default_graph()
@@ -142,8 +155,6 @@ if __name__ == "__main__":
                                 _, summary,x,y,yPred = sess.run([trainOp,merged,X,Y,YPred],feed_dict={is_training:True,learningRate:FLAGS.lr})
                                 trCount += batchSize
                                 trWriter.add_summary(summary,trCount)
-                                
-
                             
                             else:
                                 summary,x,y,yPred = sess.run([merged,X,Y,YPred],feed_dict={is_training:False})
@@ -171,24 +182,35 @@ if __name__ == "__main__":
                         saver.save(sess,savePath)
                     sess.close()
     else:
+        print("Fitting")
         import pandas as pd
         fitBs = 30
         saveShow = 0
-        fittedPath = "fitted/"+ str(FLAGS.level) + "/" + specification + "/"
+        if FLAGS.fit == 1:
+            path = "train"
+            trOrTe = "fitTrain"
+        elif FLAGS.fitTest == 1:
+            path = "test"
+            trOrTe = "fitTest"
+        fittedPath = "fitted/"+ str(FLAGS.level) + "/" + specification + "/" + path + "/"
         print("Saving files in {0}".format(fittedPath))
         if not os.path.exists(fittedPath):
             os.mkdir(fittedPath)
+        if FLAGS.show == 1:
+            imgSavePath = fittedPath + "images/"
+            if not os.path.exists(imgSavePath):
+                os.mkdir(imgSavePath)
         saver,xPath,X,Y,YPred,loss,lossP,is_training,trainOp,learningRate = nodes(
-                level = FLAGS.level,
-                batchSize=fitBs,
-                inSize=inSize,
-                trainOrTest="fit",
-                initFeats=FLAGS.initFeats,
-                incFeats=FLAGS.incFeats,
-                nDown=FLAGS.nDown,
-                nDense=FLAGS.nDense,
-                sf = FLAGS.sf
-                )
+            level = FLAGS.level,
+            batchSize=fitBs,
+            inSize=inSize,
+            trainOrTest=trOrTe,
+            initFeats=FLAGS.initFeats,
+            incFeats=FLAGS.incFeats,
+            nDown=FLAGS.nDown,
+            nDense=FLAGS.nDense,
+            sf = FLAGS.sf
+            )
         with tf.Session() as sess:
             count = 0
             filePath = np.empty((1,1))
@@ -206,7 +228,7 @@ if __name__ == "__main__":
                     if FLAGS.show == 1:
                         for i in xrange(bS):
                             fp = xPath_[i][0].split("/")[-1]
-                            show(x[i],yPred[i],FLAGS.sf,1,fittedPath + fp)
+                            show(x[i],yPred[i],FLAGS.sf,1,imgSavePath + fp)
                     predictions = np.vstack((predictions,yPred))
                     filePath = np.vstack((filePath,xPath_))
                     if count % 200 == 0:
@@ -221,6 +243,5 @@ if __name__ == "__main__":
             fittedCoords = pd.DataFrame(np.hstack((filePath,predictions)))
             fittedCoords.columns = ["path","x1","y1","x2","y2"]
             fittedCoords.to_csv(fittedPath + "fitted.csv",index = 0)
-            pdb.set_trace()
             sess.close()
                             

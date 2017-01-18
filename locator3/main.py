@@ -89,6 +89,7 @@ if __name__ == "__main__":
     flags.DEFINE_integer("fit",0,"Fit training data.")
     flags.DEFINE_integer("fitTest",0,"Fit actual test data.")
     flags.DEFINE_integer("show",0,"Show for sanity.")
+    flags.DEFINE_integer("nEpochs",20,"Number of epochs to train for.")
     batchSize = FLAGS.bS
     load = FLAGS.load
     if FLAGS.fit == 1:
@@ -104,7 +105,7 @@ if __name__ == "__main__":
     inSize = [FLAGS.sf,FLAGS.sf]
     trCount = teCount = 0
     if not FLAGS.fit:
-        for epoch in xrange(nEpochs):
+        for epoch in xrange(FLAGS.nEpochs):
             print("{0} of {1}".format(epoch,nEpochs))
             for trTe in ["train","test"]:
                 if epoch > 0 or trTe == "test":
@@ -142,15 +143,17 @@ if __name__ == "__main__":
                                 trCount += batchSize
                                 trWriter.add_summary(summary,trCount)
                                 
-                                if FLAGS.show == 1:
-                                    for i in range(x.shape[0]):
-                                        show(x[i],yPred[i],FLAGS.sf,0,"none")
-                                        pdb.set_trace()
+
                             
                             else:
                                 summary,x,y,yPred = sess.run([merged,X,Y,YPred],feed_dict={is_training:False})
                                 teCount += batchSize
                                 teWriter.add_summary(summary,teCount)
+
+                            if FLAGS.show == 1:
+                                for i in range(x.shape[0]):
+                                    show(x[i],yPred[i],FLAGS.sf,0,"none")
+                                    pdb.set_trace()
 
                             if coord.should_stop():
                                 break
@@ -202,7 +205,6 @@ if __name__ == "__main__":
                     bS = x.shape[0]
                     if FLAGS.show == 1:
                         for i in xrange(bS):
-
                             fp = xPath_[i][0].split("/")[-1]
                             show(x[i],yPred[i],FLAGS.sf,1,fittedPath + fp)
                     predictions = np.vstack((predictions,yPred))

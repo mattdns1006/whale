@@ -15,57 +15,6 @@ def show(img,coords,sf):
     plt.imshow(img)
     plt.show()
 
-def readJson(fp):
-    with open(fp) as f:
-        data = json.load(f)
-    return data
-
-def makeCsv():
-    df = pd.read_csv("../train.csv")
-    imgsPath = "/home/msmith/kaggle/whale/imgs/"
-
-    pfs = ["points1.json","points2.json"]
-    dfOut = {}
-
-    points1,points2 = readJson(pfs[0]), readJson(pfs[1])
-    i = 0
-    for p1 in tqdm(points1):
-        assert len(p1["annotations"]) == 1
-        fn = p1["filename"]
-        for p2_ in points2:
-            if p2_["filename"] == fn:
-                p2 = p2_ # found corresponding point
-                break
-
-        path = df.whaleID[df.Image == p1["filename"]].values
-        assert len(path) == 1, "more than one of same filename"
-        path = path[0] + "/" + fn
-        path = path.replace("w_","w1_")
-        path = os.path.join(imgsPath,path)
-
-        if not os.path.exists(path):
-            print("{0} does not exist.".format(path))
-            continue
-
-        img = cv2.imread(path)
-        h,w,c = img.shape
-
-        x1 = p1["annotations"][0]["x"]/w
-        y1 = p1["annotations"][0]["y"]/h
-        x2 = p2["annotations"][0]["x"]/w
-        y2 = p2["annotations"][0]["y"]/h
-        dfOut[i] = [path,x1,y1,x2,y2,w,h]
-        coords = dfOut[i][1:]
-        #eg = cv2.resize(img,(800,800))
-        #coords_ = [int(i*800) for i in [x1,y1,x2,y2]]
-        i += 1
-    dfOut = pd.DataFrame(dfOut).T
-    dfOut.columns = ["path","x1","y1","x2","y2","w","h"]
-    dfOut.to_csv("train.csv",index=0)
-    print("Written path and corresponding points to train.csv")
-    print(dfOut.head())
-
-
 def showBatch(batchX,batchY,figsize=(15,15)):
     n, h, w, c = batchX.shape
     batchX = batchX.reshape(n*h,w)
@@ -120,30 +69,31 @@ def read(csvPath,batchSize,inSize,shuffle):
 
 if __name__ == "__main__":
     import pdb, cv2
-    #makeCsv()
+    makeCsv()
 
-    sf = 800
-    inSize = [sf,sf]
-    img, coords = read(csvPath="train.csv",batchSize=1,inSize=inSize,shuffle=True)
-    init_op = tf.initialize_all_variables()
-    with tf.Session() as sess:
-        sess.run(init_op)
-        tf.initialize_local_variables().run()
-        coord = tf.train.Coordinator()
-        threads = tf.train.start_queue_runners(sess=sess,coord=coord)
-        count = 0
-        try:
-            while True:
-                out = sess.run([img,coords])
-                x, y = out[0], out[1]
+    def foo():
+        sf = 800
+        inSize = [sf,sf]
+        img, coords = read(csvPath="train.csv",batchSize=1,inSize=inSize,shuffle=True)
+        init_op = tf.initialize_all_variables()
+        with tf.Session() as sess:
+            sess.run(init_op)
+            tf.initialize_local_variables().run()
+            coord = tf.train.Coordinator()
+            threads = tf.train.start_queue_runners(sess=sess,coord=coord)
+            count = 0
+            try:
+                while True:
+                    out = sess.run([img,coords])
+                    x, y = out[0], out[1]
 
-                pdb.set_trace()
-                show(x[0],y,sf=sf)
+                    pdb.set_trace()
+                    show(x[0],y,sf=sf)
 
-                if coord.should_stop():
-                    break
-        except Exception,e:
-            coord.request_stop(e)
-        finally:
-            coord.request_stop()
-            coord.join(threads)
+                    if coord.should_stop():
+                        break
+            except Exception,e:
+                coord.request_stop(e)
+            finally:
+                coord.request_stop()
+                coord.join(threads)

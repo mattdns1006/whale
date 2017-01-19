@@ -65,7 +65,13 @@ We follow the conventional pipeline of alignment and classification and break ou
 \end{itemize}
 
 \subsection{Related work}
-Subsection text here.
+This problem is largely analagous to general facial recognition problems, ableit a different species. State of the art results for these problems and general large scale image recognition problems has been obtained by applying deep convolutional neural networks which have seen a huge resurgance in the field since 2012 \cite{simonyan2014very,russakovsky2015imagenet,graham2014fractional,mishkin2015all}.
+
+This problem also requires an object detection stage or localisation method to extract the key class feature descriptor from the huge dimension of redundant information i.e. the whale's head from the sea. Again deep learning algorithms have been used effectively for object detection by making bounding boxes aroud the region of interest (ROI) \cite{girshick2015fast,girshick2014rich}. 
+
+Object localization has also been solved by using convolutional networks to classify each pixel of the input image. This method, known as semantic segmentaion, has gained popularity in many applications, the main advantage being that the bounding contours, as opposed to bounding boxes, can take on complex shapes, don't have to overlap and dramatically reduce the size of the proposed ROI reducing the potential for false positives \cite{sermanet2013overfeat}. Moreover, there is no limit to the number of bounding contours you can have in the image. The main disadvantage being that it requires dense pixel-level labels for training.
+
+The competition's first and second place teams both used a similar localization and identification pipeline \cite{w1st}.
 
 \section{Alignment}
 

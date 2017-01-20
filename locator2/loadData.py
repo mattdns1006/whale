@@ -25,7 +25,7 @@ def showBatch(batchX,batchY,figsize=(15,15)):
 def prepImg(path,size):
     imageBytes = tf.read_file(path)
     decodedImg = tf.image.decode_jpeg(imageBytes)
-    decodedImg = tf.image.resize_images(decodedImg,size)
+    decodedImg = tf.image.resize_images(decodedImg,size,0)
     decodedImg = tf.cast(decodedImg,tf.float32)
     decodedImg = tf.mul(decodedImg,1/255.0)
     return decodedImg 
@@ -48,11 +48,11 @@ def read(csvPath,batchSize,inSize,outSize,shuffle):
     inSizeC += [3]
     outSizeC += [3]
 
-    Q = tf.FIFOQueue(256,[tf.float32,tf.float32,tf.string],shapes=[inSizeC,outSizeC,[1]])
+    Q = tf.FIFOQueue(512,[tf.float32,tf.float32,tf.string],shapes=[inSizeC,outSizeC,[1]])
     enQ = Q.enqueue([x,y,path])
     QR = tf.train.QueueRunner(
             Q,
-            [enQ]*32,
+            [enQ]*64,
             Q.close(),
             Q.close(cancel_pending_enqueues=True)
             )
@@ -67,7 +67,7 @@ if __name__ == "__main__":
     sf = 800
     inSize = [256,256]
     outSize = [256,256]
-    out = read(csvPath="csvs/train.csv",batchSize=20,inSize=inSize,outSize=outSize,shuffle=True)
+    out = read(csvPath="csvs/train.csv",batchSize=3,inSize=inSize,outSize=outSize,shuffle=True)
     init_op = tf.initialize_all_variables()
     with tf.Session() as sess:
         sess.run(init_op)

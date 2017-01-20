@@ -43,28 +43,29 @@ def dense(X,nIn,nOut):
 
 def model0(x,is_training,nLayers=4,initFeats=16,featsInc=0,nDown=8,filterSize=3):
     X = convolution2d(x,3,initFeats,filterSize)
+    print(X.get_shape().as_list())
     X = bn(X,is_training,name="bnIn")
     X = af(X)
-    dilation = 2
+    dilation = 4
     for layerNo in range(nDown):
         if layerNo == 0:
             inFeats = initFeats 
             outFeats = initFeats + featsInc
         else:
             inFeats = outFeats 
-            outFeats = initFeats
+            outFeats = outFeats + featsInc 
         with tf.variable_scope("conv_{0}".format(layerNo)):
             X = convolution2d(X,inFeats,outFeats,filterSize)
-            X = bn(X,is_training,name="bn_{0}".format(layerNo))
+            X = bn(X,is_training,name="bnconv_{0}".format(layerNo))
             X = af(X)
             print(X.get_shape().as_list(),dilation)
         with tf.variable_scope("dilconv_{0}".format(layerNo)):
             X = dilated_convolution2d(X,outFeats,outFeats,filterSize=2,dilation=dilation)
-            X = bn(X,is_training,name="bn_{0}".format(layerNo))
-            X = af(X)
-            dilation += 1
-    X = convolution2d(X,outFeats,1,filterSize)
-    out = tf.nn.sigmoid(X) # output 0,1
+            X = af(bn(X,is_training,name="bndconv_{0}".format(layerNo)))
+
+    X1 = convolution2d(X,outFeats,3,filterSize)
+    out = tf.nn.sigmoid(X1) # output 0,1
+    print(out.get_shape().as_list(),dilation)
     return out
 
 if __name__ == "__main__":

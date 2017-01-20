@@ -16,14 +16,14 @@ af = tf.nn.relu
 W = weightVar
 B = biasVar
 
-def convolution2d(inTensor,inFeats,outFeats,filterSize):
+def convolution2d(inTensor,inFeats,outFeats,filterSize,stride=1):
     with tf.name_scope("conv2d"):
         with tf.name_scope("weights"):
             weight = W([filterSize,filterSize,inFeats,outFeats])
         with tf.name_scope("biases"):
             bias = B([outFeats])
         with tf.name_scope("conv"):
-            out = conv(inTensor,weight,strides=[1,1,1,1],padding='SAME') + bias
+            out = conv(inTensor,weight,strides=[1,stride,stride,1],padding='SAME') + bias
     return out
 
 def dilated_convolution2d(inTensor,inFeats,outFeats,filterSize,dilation):
@@ -42,11 +42,29 @@ def dense(X,nIn,nOut):
     return dense
 
 def model0(x,is_training,nLayers=4,initFeats=16,featsInc=0,nDown=8,filterSize=3):
-    X = convolution2d(x,3,initFeats,filterSize)
-    print(X.get_shape().as_list())
-    X = bn(X,is_training,name="bnIn")
+    print(x.get_shape().as_list())
+
+    shortcut = convolution2d(x,3,initFeats,5,stride=8)
+    shortcut = bn(shortcut,is_training,name="bnshort")
+    shortcut = af(shortcut)
+
+    X = convolution2d(x,3,initFeats,3,stride=1)
+    X = bn(X,is_training,name="bnIn0")
     X = af(X)
-    dilation = 4
+    X = convolution2d(X,initFeats,initFeats,3,stride=2)
+    X = bn(X,is_training,name="bnIn1")
+    X = af(X)
+    X = convolution2d(X,initFeats,initFeats,3,stride=1)
+    X = bn(X,is_training,name="bnIn2")
+    X = af(X)
+    X = convolution2d(X,initFeats,initFeats,3,stride=2)
+    X = bn(X,is_training,name="bnIn3")
+    X = af(X)
+    X = convolution2d(X,initFeats,initFeats,3,stride=2)
+    X = bn(X,is_training,name="bnIn4")
+    X = shortcut + X
+    X = af(X)
+    dilation = 2
     for layerNo in range(nDown):
         if layerNo == 0:
             inFeats = initFeats 
@@ -54,17 +72,19 @@ def model0(x,is_training,nLayers=4,initFeats=16,featsInc=0,nDown=8,filterSize=3)
         else:
             inFeats = outFeats 
             outFeats = outFeats + featsInc 
+        with tf.variable_scope("shortcut_{0}".format(layerNo)):
+            shortcut = convolution2d(X,inFeats,outFeats,1)
         with tf.variable_scope("conv_{0}".format(layerNo)):
             X = convolution2d(X,inFeats,outFeats,filterSize)
             X = bn(X,is_training,name="bnconv_{0}".format(layerNo))
-            X = af(X)
-            print(X.get_shape().as_list(),dilation)
+            shortcut2 = X
         with tf.variable_scope("dilconv_{0}".format(layerNo)):
             X = dilated_convolution2d(X,outFeats,outFeats,filterSize=2,dilation=dilation)
-            X = af(bn(X,is_training,name="bndconv_{0}".format(layerNo)))
+            X = af(bn(X+shortcut+shortcut2,is_training,name="bndconv_{0}".format(layerNo)))
+            print(X.get_shape().as_list(),dilation)
 
     X1 = convolution2d(X,outFeats,3,filterSize)
-    out = tf.nn.sigmoid(X1) # output 0,1
+    out = X1 # output 0,1
     print(out.get_shape().as_list(),dilation)
     return out
 

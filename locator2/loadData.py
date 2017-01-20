@@ -30,8 +30,8 @@ def prepImg(path,size):
     decodedImg = tf.mul(decodedImg,1/255.0)
     return decodedImg 
 
-def read(csvPath,batchSize,inSize,outSize,shuffle):
-    csv = tf.train.string_input_producer([csvPath],num_epochs=1,shuffle=shuffle)
+def read(csvPath,batchSize,inSize,outSize,shuffle,num_epochs):
+    csv = tf.train.string_input_producer([csvPath],num_epochs=num_epochs,shuffle=shuffle)
     reader = tf.TextLineReader(skip_header_lines=1)
     k, v = reader.read(csv)
     defaults = [tf.constant([],dtype = tf.string),

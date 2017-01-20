@@ -9,7 +9,7 @@ def makeCsv():
     if not os.path.exists("csvs/"):
         os.mkdir("csvs")
     for d in ["train","test","testAugmented"]:
-        x = glob.glob("../locator/augmented/{0}/x_*.jpg".format(d))
+        x = glob.glob("../locator/augmented/{0}/x_*.jpg".format(d))[:200]
         x = [os.path.abspath(i) for i in x]
         y = [i.replace("x_","y_") for i in x]
         df = pd.DataFrame({"x":x,"y":y})

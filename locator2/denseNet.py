@@ -14,16 +14,16 @@ dilconv = tf.nn.atrous_conv2d
 convUp = tf.nn.conv2d_transpose
 af = tf.nn.relu
 
-def weightVar(shape,stddev=0.35):
-    nOut = shape[-1]
-    nIn = shape[-2]
-    n = (nOut + nIn)/2.0
-    limit = math.sqrt(3.0/n)
-    initial = tf.random_uniform(shape, -limit, limit)
+def weightVar(shape):
+    n = shape[0]*shape[1]*shape[2]
+    stddev = np.sqrt(2.0/n)
+    print("Number of neurons (n) = {0} for {1}. Initializing with N(0,2/n) = N(0,{2}).".format(n,shape,stddev))
+    #initial = tf.random_uniform(shape, -limit, limit)
+    initial = tf.random_normal(shape, mean=0, stddev=stddev)
     return tf.Variable(initial)
 
 def biasVar(shape):
-    initial = tf.constant(0.1, shape=shape)
+    initial = tf.constant(0.0, shape=shape)
     return tf.Variable(initial)
 
 W = weightVar
@@ -49,10 +49,10 @@ def dilated_convolution2d(inTensor,inFeats,outFeats,filterSize,dilation):
     return out 
 
 
-def model0(x,is_training,initFeats=16,featsInc=0,nDown=8,filterSize=3):
+def model0(x,is_training,initFeats=16,featsInc=0,nDown=8,filterSize=3,decay=0.95):
     print(x.get_shape())
     with tf.variable_scope("convIn"):
-        x1 = af(bn(convolution2d(x,3,initFeats,3,stride=1),is_training=is_training,name="bn_0"))
+        x1 = af(bn(convolution2d(x,3,initFeats,3,stride=1),is_training=is_training,name="bn_0",decay=decay))
 
     dilation = 2
     for block in range(nDown):
@@ -63,15 +63,15 @@ def model0(x,is_training,initFeats=16,featsInc=0,nDown=8,filterSize=3):
             inFeats = outFeats 
             outFeats = outFeats + featsInc
         with tf.variable_scope("block_down_{0}".format(block)):
-	    x1 = af(bn(convolution2d(x1,inFeats,outFeats,3,stride=1),is_training=is_training,name="bn_{0}_0".format(nDown)))
-	    #x1 = af(bn(convolution2d(x1,outFeats,outFeats,3,stride=1),is_training=is_training,name="bn_{0}_1".format(nDown)))
+	    x1 = af(bn(convolution2d(x1,inFeats,outFeats,3,stride=1),is_training=is_training,name="bn_{0}_0".format(nDown),decay=decay))
+	    #x1 = af(bn(convolution2d(x1,outFeats,outFeats,3,stride=1),is_training=is_training,name="bn_{0}_1".format(nDown),decay=decay))
 	    #x1 = af(bn(dilated_convolution2d(x1,outFeats,outFeats,3,dilation=dilation),is_training=is_training,name="bn_{0}_2".format(nDown)))
 	    x1 = tf.nn.max_pool(x1,[1,3,3,1],[1,2,2,1],"SAME")
             dilation += 4
     	    print(x1.get_shape())
 
     with tf.variable_scope("convOut"):
-        out = tf.nn.sigmoid(bn(convolution2d(x1,outFeats,3,3,stride=1),is_training=is_training,name="bn_out"))
+        out = tf.nn.sigmoid(bn(convolution2d(x1,outFeats,3,3,stride=1),is_training=is_training,name="bn_out",decay=decay))
         #out = tf.nn.sigmoid(convolution2d(x1,outFeats,3,3,stride=1))
     print(out.get_shape())
     return out 

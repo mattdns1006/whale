@@ -34,23 +34,28 @@
 
 \author[1,*]{Matt Smith}
 \affil{Department of Statistics, University of Warwick, Coventry, United Kingdom}
-
+\author{Ian Tu}
 \author{Abhir Bhalerao}
 %%%% By default, the citations will come automatically,
 %%%% The optional bracket "[2.*]" is used  to display the corresponding author symbol
 \affil{Department of Computer Science, University of Warwick, Coventry, United Kingdom}
+
 
 \author{Ben Graham}
 \affil{Facebook Artificial Intelligence Research, Paris, France}
 %%%% Corresponding author detail must placed here
 \affil[*]{m.d.smith@warwick.ac.uk}
 
-\abstract{Accurate monitoring of individuals in a threatened species is of upmost importance to conservationists and researchers. Human observation is expensive and autonomous ariel photography is becoming an increasingly useful technique regarding animal biometrics \cite{koh2012dawn,martin2012estimating}. Fewer than 500 North Atlantic right whales are left in the world's oceans. As with many animal biometric inspection processes, tracking and monitoring individuals is an extremely time consuming process. Advances in the implementation and performance of deep learning algorithms have drastically improved performance in object detection and recognition tasks \cite{lecun2015deep}.  We employ a wide range of interesting techniques to build a "face-identification" algorithm for ariel photos of 447 unique. We follow a conventional modern face recognition pipeline consisting of the stages: detect, align, represent and classify \cite{taigman2014deepface}. We use deep learning algorithms to both detect and classify. A fully convolutional network \cite{long2015fully} is employed to semantically segment a given image to detect the location of the whale's head and body, we then use PCA on the resulting image to normalize for the whale's direction. A significant amount of hand labelled masks are needed to generate enough supervised training data to make this work effectively \cite{hong2015decoupled}. We tackle this issue by employing semi-supervised learning techniques and histogram matching between images to improve our localization algorithm and find a significant improvement in our results.}
+\abstract{We employ deep learning methods to build a "face-identification" algorithm for ariel photos of 447 unique Right whales. The dataset, taken from a Kaggle competition, has large amounts of variation across multiple ranges such as; angle, pose, distance, illumination. A sophisiticated face recognition pipeline is therefore needed to effectively solve this problem. A fully convolutional network (FCN) \cite{long2015fully} is employed to semantically segment a given image to detect the location of the whale's head and body. This mask is used to normalize for the direction and distance of the whale before it is fed into a classifier. A significant amount of hand labelled masks are needed to generate enough supervised training data to make the FCN work effectively \cite{hong2015decoupled}. We use histogram matching between images to improve our localization algorithm and find a significant improvement in our results.}
 
 \maketitle
 
 \section{Introduction}
-We entered the 2015 Right Whale Recognition online competition issued by Kaggle. Data consists of aeriel images, the vast majority containing a single Right whale. There are $M$ = 447 unique whales, each of which has at least one photo in the training set which contains 4543 labelled images. The test set contains $N$ = 6925 unlabelled images. Evaluation is based on the multi-class logarithmic loss
+Accurate monitoring of individuals in a threatened species is of upmost importance to conservationists and researchers. Human observation is expensive and autonomous ariel photography is becoming an increasingly useful technique regarding animal biometrics \cite{koh2012dawn,martin2012estimating}. Fewer than 500 North Atlantic right whales are left in the world's oceans. As with many animal biometric inspection processes, tracking and monitoring individuals is an extremely time consuming process. Advances in the implementation and performance of deep learning algorithms have drastically improved performance in object detection and recognition tasks \cite{lecun2015deep}. 
+
+We entered the 2015 Right Whale Recognition online competition issued by Kaggle. Data consists of aeriel images, the vast majority containing a single Right whale. Right whales have a distinguishing rough patches of skin on their head, which appear white due to a parasitism by whale lice and provide an effective feature for identifying individual whales \cite{kaliszewska2005population}. We therefore tackle this problem useing a conventional four stage pipeline; detect, align, represent and classify \cite{taigman2014deepface}.  
+
+There are $M$ = 447 unique whales, each of which has at least one photo in the training set which contains 4543 labelled images. The test set contains $N$ = 6925 unlabelled images. Evaluation is based on the multi-class logarithmic loss
 \begin{eqnarray}
 \text{logloss} = - \frac{1}{N} \sum_{i=1}^{N} \sum_{i=1}^{M} y_{ij} \text{log}(p_{ij}),
 \end{eqnarray}
@@ -58,20 +63,20 @@ where log is the natural logarithm, $y_{ij}$ is 1 if observation $i$ belongs to 
 
 The data was collected and labelled over a 10 year period by NOAA (National Oceanic and Atmospehric Administration) scientists via numerous helicopter trips over the northern Atlantic. 
 
-We follow the conventional pipeline of alignment and classification and break our task of classifying a given photo, denoted $X_i$ into two main stages, both of which employ using convolutional neural networks;
+We break our task of classifying a given photo, denoted $X_i$ into two main stages, both of which employ using convolutional neural networks;
 \begin{itemize}
 \item Alignment - We first reduce the dimensionality of $X_i$ and normalize for the distance to and orientation of the whale, generating a headshot of the whale, denoted $X_i^h$.
 \item Classification - $X_i^h$ is passed through a classifier which outputs a probability mass function over the 447 whales.
 \end{itemize}
 
 \subsection{Related work}
-This problem is largely analagous to general facial recognition problems, ableit a different species. State of the art results for these problems and general large scale image recognition problems has been obtained by applying deep convolutional neural networks which have seen a huge resurgance in the field since 2012 \cite{simonyan2014very,russakovsky2015imagenet,graham2014fractional,mishkin2015all}.
+Human face recognition problems are similar in the pipeline, however many facial recognition systems are solved for datasets where faces are largely frontal and relativley well normalized compared to ariel photos of whales. State of the art results for these problems and general large scale image recognition problems has been obtained by applying deep convolutional neural networks which have seen a huge resurgance in the field since 2012 \cite{simonyan2014very,russakovsky2015imagenet,graham2014fractional,mishkin2015all}.
 
 This problem also requires an object detection stage or localisation method to extract the key class feature descriptor from the huge dimension of redundant information i.e. the whale's head from the sea. Again deep learning algorithms have been used effectively for object detection by making bounding boxes aroud the region of interest (ROI) \cite{girshick2015fast,girshick2014rich}. 
 
-Object localization has also been solved by using convolutional networks to classify each pixel of the input image. This method, known as semantic segmentaion, has gained popularity in many applications, the main advantage being that the bounding contours, as opposed to bounding boxes, can take on complex shapes, don't have to overlap and dramatically reduce the size of the proposed ROI reducing the potential for false positives \cite{sermanet2013overfeat}. Moreover, there is no limit to the number of bounding contours you can have in the image. The main disadvantage being that it requires dense pixel-level labels for training.
+Object localization has also been solved by using convolutional networks to classify each pixel of the input image. This method, known as semantic segmentation, has gained popularity in many applications, the main advantage being that the bounding contours, as opposed to bounding boxes, can take on complex shapes, don't have to overlap and dramatically reduce the size of the proposed ROI reducing the potential for false positives \cite{sermanet2013overfeat}. Moreover, there is no limit to the number of bounding contours you can have in the image. The main disadvantage being that it requires dense pixel-level labels for training.
 
-The competition's first and second place teams both used a similar localization and identification pipeline \cite{w1st}.
+The competition's first place team used a similar localization and identification pipeline but stick to bounding box methods for localization \cite{w1st}. Although it is initially expensive to label pixel-wise maks, our semantic labelling incorporates multiple benefits, it can; describe multiple whales per image, provide information on the anatomy of the whale and generate a more precise localization technique.
 
 \section{Alignment}
 
@@ -82,13 +87,13 @@ It is helpful to remove variation in inputs before giving them to a deep learnin
 We randomly choose 550 images from our training set $M^{Train}$ and another random 150 images to generate a test set $M^{Test}$. Using a graphics editor, for each $X_i \in {M^{Train}, M^{Test}}$ we create a semantic mask denoted $M_i$. An example of a pair is shown in figure \ref{fig:whaleLabel}.
 \begin{figure}[H]
 \centering     %%% not \center
-\subfigure[]{\includegraphics[width=0.45\textwidth]{images/maskExample/x.jpg}}
-\subfigure[]{\includegraphics[width=0.45\textwidth]{images/maskExample/y.jpg}}
+\subfigure[]{\includegraphics[width=0.45\textwidth]{images/maskExample/w1_3733.jpg}}
+\subfigure[]{\includegraphics[width=0.45\textwidth]{images/maskExample/red.jpg}}
 \caption{Example of $\{X_i,M_i\}$ pair;\
 a) $X_i$, b) $M_i$.
 }\label{fig:whaleLabel}
 \end{figure}
-We distinguish between head, body and sea using red, yellow and black respectivley. Having two colors for distinguishing parts of the whale enables us to infer the direcition in which the whale is pointing. We rescale each $X_i$ to dimension $w \times h \times c = 600 \times 900 \times 3$ and each $M_i$ to $w^{'}\times h^{'}\times c^{'} = 19 \times 29 \times 3$. We further process $X_i$ as described later on, creating $X_i^1$ and feed it into a fully connected convolutional neural network (FCNN) to learn a function $f_1: \real^{w\times h \times c} \to \real^{w^{'}\times h^{'}\times c^{'}}$. We are not interested in a huge amount of detail being produced in our predicted $\hat{M}_i$, enough to infer head and body location, hence our choice for relatively small output space.
+We distinguish between head, body and sea using red, yellow and black respectivley. Having two colors for distinguishing parts of the whale enables us to infer the direction in which the whale is moving. We rescale each $X_i$ to dimension $w \times h \times c = 600 \times 900 \times 3$ and each $M_i$ to $w^{'}\times h^{'}\times c^{'} = 19 \times 29 \times 3$. We further process $X_i$ as described later on, creating $X_i^1$ and feed it into a fully connected convolutional neural network (FCNN) to learn a function $f_1: \real^{w\times h \times c} \to \real^{w^{'}\times h^{'}\times c^{'}}$. We are not interested in a huge amount of detail being produced in our predicted $\hat{M}_i$, enough to infer head and body location, hence our choice for relatively small output space.
 
 We describe our neural network architecture as follows;
 \begin{align}\label{eq:whaleconv1}
@@ -139,12 +144,12 @@ We train $f_1$ for 20 epochs, using the mean squared error (MSE) as our loss fun
 \end{align}
 To artificially increase the size of the dataset we perform random augmentation procedures to each image on the fly; including, flips, rotations, shifts and sheers. However It is well known that a large quantity of varied data is required to train deep networks well, especially to fit complicated functions and generalise well to unseen examples. It is not plausible to learn a huge number of parameters in deep networks reliably in this scenario \cite{zhu2011semi}. Our particular case we hand labelled 700 images, moreover, as can be seen in the particular case of figure \ref{fig:whaleLabel}, they are far from perfect. Large variations in brightness and sea color in $X_i$ ensures even more data is needed to generalize well. 
 
-We combated variation in sea color and brightness by using a histogram matching \cite{gonzalez2002digital} based technique to normalize for such variation. Before each $X_i$ is fed into $f_1$ we match the cumulative distribution function (CDF) of each channel in its YUV color space to the respective YUV channel of a prespecified baseline target, denoted $T$. This is illustrated figure \ref{fig:histMatch}.
+We combated variation in sea color and brightness by using a histogram matching \cite{gonzalez2002digital} based technique to normalize for such variation. Before each $X_i$ is fed into $f_1$ we match the cumulative distribution function (CDF) of each channel in its YUV color space to the respective YUV channel of a prespecified baseline target, denoted $T$. This generates a processed version of $X_i$ denoted $X_i^1$ which is illustrated figure \ref{fig:histMatch}.
 
 \begin{figure}[h]
 \centering
 \includegraphics[width=\textwidth]{images/histMatch2/g5414.png}
-\caption{Illustration of histogram matching; two examples are histogram matched with our base target image $T$. Densities below the two respective input images illustrate the prematched density (red) who's CDFs are matched with the CDF of the target density (blue), resulting in the matched output images and their corresponding densities (green).}
+\caption{Illustration of histogram matching; two examples ($X_i$) are histogram matched with our base target image $T$ generating $X_i^1$. The prematched densities's (red) CDFs are matched with the CDF of the target density (blue), resulting in the matched output images and their corresponding densities (green).}
 \label{fig:histMatch}
 \end{figure}
 
@@ -175,29 +180,12 @@ a) $X_i$, b) $X_i^1$, c) $\hat{M}_i$ and d) $\hat{M}_i^1$ with principal axes il
 }\label{fig:maskProcess}
 \end{center}
 \end{figure}
-We rotate $\hat{M}_i^{1}$ and $X_i$ about $m_r$ by $\theta = \text{atan}2(u_{12},u_{11})$, generating $\hat{M}_i^{2}$ and $X_i^2$. As rotation is completed we want to crop around the head of the whale. The rotated mask $\hat{M}_i^{2}$ is then converted to the HSV color space in order to threshold the hue channel for red and value channel above another tuned threshold as shown in figure \ref{fig:maskRot}.
+We rotate $\hat{M}_i^{1}$ and $X_i$ about $m_r$ by $\theta = \text{atan}2(u_{12},u_{11})$, generating $\hat{M}_i^{2}$ and $X_i^2$. When rotation is completed we crop around the head of the whale. The rotated mask $\hat{M}_i^{2}$ is then converted to the HSV color space in order to threshold the hue channel for red and value channel above another tuned threshold as shown in figure. This gives us our head shot $X_i^h$. A full pipeline of the steps is given in \ref{fig:maskRot}.
 \begin{figure}[H]
 \begin{center}
-\foreach \x in {1,4,5,6} 
-{
-\subfigure[]{\includegraphics[width=\fourPic\textwidth]{images/locator/2/\x .jpg}}
-}
-\caption{Rotation example in alginment stage;\
-a) $X_i$, b) $\hat{M}_i^{1}$, c) $\hat{M}_i^{2}$ and d) $\hat{M}_i^{2}$ thresholded for red.
+\includegraphics[width=\textwidth]{images/locator/drawing.png}
+\caption{Full processing pipeline for two images; from $X_i$ to $X_i^h$;\
 }\label{fig:maskRot}
-\end{center}
-\end{figure}
-This gives us our head shot $X_i^h$ as shown in figure \ref{fig:origRot}.
-\begin{figure}[H]
-\begin{center}
-\foreach \x in {1,7,8} 
-{
-\subfigure[]{\includegraphics[width=0.2\textwidth]{images/locator/2/\x .jpg}}
-}
-\caption{Obtaining the head shot;
-a) $X_i$, b) $X_i^{2}$ and c) $X_i^{h}$.
-}
-\label{fig:origRot}
 \end{center}
 \end{figure}
 

@@ -3,7 +3,7 @@ import numpy as np
 import tensorflow as tf
 import matplotlib.pyplot as plt
 import loadData
-from model import model0
+from denseNet import model0
 sys.path.append("/Users/matt/misc/tfFunctions/")
 from dice import dice
 
@@ -31,7 +31,7 @@ def imgSummary(name,img):
 
 def lossFn(y,yPred):
     with tf.variable_scope("loss"):
-        loss = tf.sqrt(tf.reduce_mean(tf.square(tf.sub(y,yPred))))
+        loss = tf.reduce_mean(tf.square(tf.sub(y,yPred)))
     return loss
 
 def trainer(lossFn, learningRate):
@@ -39,7 +39,7 @@ def trainer(lossFn, learningRate):
 
 def nodes(batchSize,inSize,outSize,trainOrTest,initFeats,incFeats,nDown,num_epochs):
     if trainOrTest == "train":
-        csvPath = "csvs/train.csv"
+        csvPath = "csvs/trainS.csv"
         print("Training")
         shuffle = True
     elif trainOrTest == "test":
@@ -78,16 +78,16 @@ if __name__ == "__main__":
     flags.DEFINE_float("lrD",1.00,"Learning rate division rate applied every epoch. (DEFAULT - nothing happens)")
     flags.DEFINE_integer("inSize",256,"Size of input image")
     flags.DEFINE_integer("outSize",256,"Size of output image")
-    flags.DEFINE_integer("initFeats",16,"Initial number of features.")
+    flags.DEFINE_integer("initFeats",48,"Initial number of features.")
     flags.DEFINE_integer("incFeats",0,"Number of features growing.")
-    flags.DEFINE_integer("nDown",8,"Number of blocks going down.")
+    flags.DEFINE_integer("nDown",20,"Number of blocks going down.")
     flags.DEFINE_integer("bS",10,"Batch size.")
     flags.DEFINE_integer("load",0,"Load saved model.")
     flags.DEFINE_integer("trainAll",0,"Train on all data.")
     flags.DEFINE_integer("fit",0,"Fit training data.")
     flags.DEFINE_integer("fitTest",0,"Fit actual test data.")
     flags.DEFINE_integer("show",0,"Show for sanity.")
-    flags.DEFINE_integer("nEpochs",10,"Number of epochs to train for.")
+    flags.DEFINE_integer("nEpochs",200,"Number of epochs to train for.")
     batchSize = FLAGS.bS
     load = FLAGS.load
     if FLAGS.fit == 1 or FLAGS.fitTest == 1:
@@ -104,7 +104,7 @@ if __name__ == "__main__":
     trCount = teCount = 0
     tr = "train"
     if FLAGS.fit == 0 and FLAGS.fitTest == 0:
-        for trTe in ["train","test"]:
+        for trTe in ["train"]:
             if trTe == "test":
                 load = 1
                 tf.reset_default_graph()
@@ -146,9 +146,9 @@ if __name__ == "__main__":
                             teCount += batchSize
                             teWriter.add_summary(summary,teCount)
                         else:
-                            print("wtf r u doin")
+                            break
 
-                        if count % 100 == 0:
+                        if count % 50 == 0:
                             print("Seen {0} examples".format(count))
                             if FLAGS.show == 1:
                                 showBatch(x,y,yPred,"{0}eg.jpg".format(imgPath))

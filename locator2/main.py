@@ -8,7 +8,7 @@ sys.path.append("/Users/matt/misc/tfFunctions/")
 from dice import dice
 
 def showBatch(batchX,batchY,batchZ,wp,figsize=(15,15)):
-    outSize = 100 # width
+    outSize = 200 # width
     n, h, w, c = batchX.shape
     batchX = batchX.reshape(n*h,w,c)
     n, h, w, c = batchY.shape
@@ -41,7 +41,7 @@ def trainer(lossFn, learningRate):
 
 def nodes(batchSize,inSize,outSize,trainOrTest,initFeats,incFeats,nDown,num_epochs):
     if trainOrTest == "train":
-        csvPath = "csvs/trainS.csv"
+        csvPath = "csvs/train.csv"
         print("Training")
         shuffle = True
     elif trainOrTest == "test":
@@ -106,9 +106,10 @@ if __name__ == "__main__":
     trCount = teCount = 0
     tr = "train"
     if FLAGS.fit == 0 and FLAGS.fitTest == 0:
-        for trTe in ["train"]:
+        for trTe in ["train","test"]:
             if trTe == "test":
                 load = 1
+                FLAGS.nEpochs = 1
                 tf.reset_default_graph()
             saver,xPath,X,Y,YPred,loss,is_training,trainOp,learningRate = nodes(
                     batchSize=FLAGS.bS,
@@ -142,18 +143,23 @@ if __name__ == "__main__":
                             trCount += batchSize
                             count += batchSize
                             trWriter.add_summary(summary,trCount)
+                            if count % 50 == 0:
+                                print("Seen {0} examples".format(count))
+                                if FLAGS.show == 1:
+                                    showBatch(x,y,yPred,"{0}_{1}_.jpg".format(imgPath,trTe))
                         
                         elif trTe == ["test"]:
                             summary,x,y,yPred = sess.run([merged,X,Y,YPred],feed_dict={is_training:False})
                             teCount += batchSize
                             teWriter.add_summary(summary,teCount)
+                            showBatch(x,y,yPred,"{0}_{1}_{2}.jpg".format(imgPath,trTe,teCount))
+
                         else:
                             break
 
-                        if count % 50 == 0:
-                            print("Seen {0} examples".format(count))
-                            if FLAGS.show == 1:
-                                showBatch(x,y,yPred,"{0}eg.jpg".format(imgPath))
+                        if count % 1000 == 0:
+                            print("Saving")
+                            saver.save(sess,savePath)
 
                         if coord.should_stop():
                             break

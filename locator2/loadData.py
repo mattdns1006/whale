@@ -28,6 +28,7 @@ def prepImg(path,size):
     decodedImg = tf.image.resize_images(decodedImg,size,0)
     decodedImg = tf.cast(decodedImg,tf.float32)
     decodedImg = tf.mul(decodedImg,1/255.0)
+    decodedImg = tf.sub(decodedImg,tf.reduce_mean(decodedImg))
     return decodedImg 
 
 def read(csvPath,batchSize,inSize,outSize,shuffle,num_epochs):

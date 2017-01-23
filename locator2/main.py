@@ -8,17 +8,19 @@ sys.path.append("/Users/matt/misc/tfFunctions/")
 from dice import dice
 
 def showBatch(batchX,batchY,batchZ,wp,figsize=(15,15)):
+    outSize = 100 # width
     n, h, w, c = batchX.shape
     batchX = batchX.reshape(n*h,w,c)
     n, h, w, c = batchY.shape
     batchY = batchY.reshape(n*h,w,c)
     n, h, w, c = batchZ.shape
     batchZ = batchZ.reshape(n*h,w,c)
-    Y = np.hstack((batchY,batchZ))*255.0
+    Y = np.hstack((batchY,batchZ))
     Y = Y[:,:,::-1]
-    cv2.imwrite(wp.replace(".jpg","y.jpg"),Y)
-    X = batchX[:,:,::-1]*255.0
-    cv2.imwrite(wp.replace(".jpg","x.jpg"),X)
+    Y = cv2.resize(Y,(outSize*2,outSize*n))
+    X = cv2.resize(batchX,(outSize,outSize*n))[:,:,::-1]
+    out = np.hstack((X,Y))*255.0
+    cv2.imwrite(wp.replace(".jpg","eg.jpg"),out)
 
 
 def varSummary(var,name):
@@ -74,13 +76,13 @@ if __name__ == "__main__":
     nEpochs = 20
     flags = tf.app.flags
     FLAGS = flags.FLAGS 
-    flags.DEFINE_float("lr",0.0001,"Initial learning rate.")
+    flags.DEFINE_float("lr",0.01,"Initial learning rate.")
     flags.DEFINE_float("lrD",1.00,"Learning rate division rate applied every epoch. (DEFAULT - nothing happens)")
-    flags.DEFINE_integer("inSize",256,"Size of input image")
-    flags.DEFINE_integer("outSize",256,"Size of output image")
-    flags.DEFINE_integer("initFeats",48,"Initial number of features.")
-    flags.DEFINE_integer("incFeats",0,"Number of features growing.")
-    flags.DEFINE_integer("nDown",20,"Number of blocks going down.")
+    flags.DEFINE_integer("inSize",512,"Size of input image")
+    flags.DEFINE_integer("outSize",64,"Size of output image")
+    flags.DEFINE_integer("initFeats",16,"Initial number of features.")
+    flags.DEFINE_integer("incFeats",16,"Number of features growing.")
+    flags.DEFINE_integer("nDown",3,"Number of blocks going down.")
     flags.DEFINE_integer("bS",10,"Batch size.")
     flags.DEFINE_integer("load",0,"Load saved model.")
     flags.DEFINE_integer("trainAll",0,"Train on all data.")

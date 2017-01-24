@@ -52,7 +52,7 @@ def dilated_convolution2d(inTensor,inFeats,outFeats,filterSize,dilation):
 def model0(x,is_training,initFeats=16,featsInc=0,nDown=8,filterSize=3,decay=0.95):
     print(x.get_shape())
     with tf.variable_scope("convIn"):
-        x1 = af(bn(convolution2d(x,3,initFeats,3,stride=1),is_training=is_training,name="bn_0",decay=decay))
+        x1 = af(bn(convolution2d(x,3,initFeats,3,stride=2),is_training=is_training,name="bn_0",decay=decay))
 
     dilation = 2
     for block in range(nDown):
@@ -66,10 +66,13 @@ def model0(x,is_training,initFeats=16,featsInc=0,nDown=8,filterSize=3,decay=0.95
 	    x2 = af(bn(convolution2d(x1,inFeats,outFeats,1,stride=1),is_training=is_training,name="bn_{0}_0".format(nDown),decay=decay))
 	    x3 = af(bn(convolution2d(x1,inFeats,outFeats,3,stride=1),is_training=is_training,name="bn_{0}_1".format(nDown),decay=decay))
 	    x4 = af(bn(dilated_convolution2d(x1,inFeats,outFeats,3,dilation=dilation),is_training=is_training,name="bn_{0}_2".format(nDown)))
-            x5 = bn(x4 + x3 + x2,is_training=is_training,name="bn_{0}_3".format(nDown))
-	    x1 = tf.nn.max_pool(x5,[1,3,3,1],[1,2,2,1],"SAME")
-            dilation += 4
-    	    print(x1.get_shape())
+	    x5 = af(bn(dilated_convolution2d(x1,inFeats,outFeats,2,dilation=dilation-1),is_training=is_training,name="bn_{0}_3".format(nDown)))
+            x6 = bn(x5 + x4 + x3 + x2,is_training=is_training,name="bn_{0}_4".format(nDown))
+	    x1 = tf.nn.max_pool(x6,[1,3,3,1],[1,2,2,1],"SAME")
+    	    print(x6.get_shape())
+            #x1,_,_ = tf.nn.fractional_max_pool(x5,[1.0,1.5,1.5,1.0],True,True)
+            dilation += 2
+
 
     with tf.variable_scope("convOut"):
         out = tf.nn.sigmoid(bn(convolution2d(x1,outFeats,3,3,stride=1),is_training=is_training,name="bn_out",decay=decay))

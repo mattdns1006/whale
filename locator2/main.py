@@ -41,13 +41,17 @@ def trainer(lossFn, learningRate):
 
 def nodes(batchSize,inSize,outSize,trainOrTest,initFeats,incFeats,nDown,num_epochs):
     if trainOrTest == "train":
-        csvPath = "csvs/train.csv"
+        csvPath = "csvs/all.csv"
         print("Training")
         shuffle = True
     elif trainOrTest == "test":
         csvPath = "csvs/test.csv"
         num_epochs = 1
         shuffle = False 
+    elif trainOrTest == "fit":
+        csvPath = "csvs/fit.csv"
+        num_epochs = 1
+        shuffle = True 
     X,Y,xPath = loadData.read(csvPath=csvPath,
             batchSize=batchSize,
             inSize=inSize,
@@ -105,76 +109,85 @@ if __name__ == "__main__":
     savePath = modelDir + "model.tf"
     trCount = teCount = 0
     tr = "train"
-    if FLAGS.fit == 0 and FLAGS.fitTest == 0:
-        for trTe in ["train","test"]:
-            if trTe == "test":
-                load = 1
-                FLAGS.nEpochs = 1
-                tf.reset_default_graph()
-            saver,xPath,X,Y,YPred,loss,is_training,trainOp,learningRate = nodes(
-                    batchSize=FLAGS.bS,
-                    trainOrTest=trTe,
-                    inSize = [FLAGS.inSize,FLAGS.inSize],
-                    outSize = [FLAGS.outSize,FLAGS.outSize],
-                    initFeats=FLAGS.initFeats,
-                    incFeats=FLAGS.incFeats,
-                    nDown=FLAGS.nDown,
-                    num_epochs=FLAGS.nEpochs
-                    )
-            gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.85)
+    what = ["train","test"]
+    if FLAGS.fit == 1:
+        what = ["fit"]
+    for trTe in what:
+        if trTe in ["fit","test"]:
+            load = 1
+            FLAGS.nEpochs = 1
+            tf.reset_default_graph()
+        saver,xPath,X,Y,YPred,loss,is_training,trainOp,learningRate = nodes(
+                batchSize=FLAGS.bS,
+                trainOrTest=trTe,
+                inSize = [FLAGS.inSize,FLAGS.inSize],
+                outSize = [FLAGS.outSize,FLAGS.outSize],
+                initFeats=FLAGS.initFeats,
+                incFeats=FLAGS.incFeats,
+                nDown=FLAGS.nDown,
+                num_epochs=FLAGS.nEpochs
+                )
+        gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.85)
 
-            merged = tf.summary.merge_all()
-            with tf.Session(config=tf.ConfigProto(gpu_options=gpu_options)) as sess:
-                if load == 1:
-                    print("Restoring {0}.".format(specification))
-                    saver.restore(sess,savePath)
-                else:
-                    tf.global_variables_initializer().run()
-                tf.local_variables_initializer().run()
-                trWriter = tf.summary.FileWriter("summary/{0}/train/".format(specification),sess.graph)
-                teWriter = tf.summary.FileWriter("summary/{0}/test/".format(specification),sess.graph)
-                coord = tf.train.Coordinator()
-                threads = tf.train.start_queue_runners(sess=sess,coord=coord)
-                count = 0
-                try:
-                    while True:
-                        if trTe in ["train","trainAll"]:
-                            _, summary,x,y,yPred = sess.run([trainOp,merged,X,Y,YPred],feed_dict={is_training:True,learningRate:FLAGS.lr})
-                            trCount += batchSize
-                            count += batchSize
-                            trWriter.add_summary(summary,trCount)
-                            if count % 50 == 0:
-                                print("Seen {0} examples".format(count))
-                                if FLAGS.show == 1:
-                                    showBatch(x,y,yPred,"{0}_{1}_.jpg".format(imgPath,trTe))
-                        
-                        elif trTe == ["test"]:
-                            summary,x,y,yPred = sess.run([merged,X,Y,YPred],feed_dict={is_training:False})
-                            teCount += batchSize
-                            teWriter.add_summary(summary,teCount)
-                            showBatch(x,y,yPred,"{0}_{1}_{2}.jpg".format(imgPath,trTe,teCount))
+        merged = tf.summary.merge_all()
+        with tf.Session(config=tf.ConfigProto(gpu_options=gpu_options)) as sess:
+            if load == 1:
+                print("Restoring {0}.".format(specification))
+                saver.restore(sess,savePath)
+            else:
+                tf.global_variables_initializer().run()
+            tf.local_variables_initializer().run()
+            trWriter = tf.summary.FileWriter("summary/{0}/train/".format(specification),sess.graph)
+            teWriter = tf.summary.FileWriter("summary/{0}/test/".format(specification),sess.graph)
+            coord = tf.train.Coordinator()
+            threads = tf.train.start_queue_runners(sess=sess,coord=coord)
+            count = 0
+            try:
+                while True:
+                    if trTe in ["train","trainAll"]:
+                        _, summary,x,y,yPred = sess.run([trainOp,merged,X,Y,YPred],feed_dict={is_training:True,learningRate:FLAGS.lr})
+                        trCount += batchSize
+                        count += batchSize
+                        trWriter.add_summary(summary,trCount)
+                        if count % 400 == 0:
+                            print("Seen {0} examples".format(count))
+                            if FLAGS.show == 1:
+                                showBatch(x,y,yPred,"{0}_{1}_.jpg".format(imgPath,trTe))
+                    
+                    elif trTe == ["test"]:
+                        summary,x,y,yPred = sess.run([merged,X,Y,YPred],feed_dict={is_training:False})
+                        teCount += batchSize
+                        teWriter.add_summary(summary,teCount)
+                        showBatch(x,y,yPred,"{0}_{1}_{2}.jpg".format(imgPath,trTe,teCount))
+                    elif trTe == "fit":
+                        x, yPred,fp = sess.run([X,YPred,xPath],feed_dict={is_training:False})
+                        for i in range(x.shape[0]):
+                            wp = fp[i][0].replace("w1_","m3_")
+                            im = yPred[i][:,:,::-1]*255
+                            cv2.imwrite(wp,im)
+                        if np.random.uniform() < 0.003:
+                            showBatch(x[0],yPred[0],yPred[0],"{0}_{1}_{2}.jpg".format(imgPath,trTe,fp[0]))
+                    else:
+                        break
 
-                        else:
-                            break
+                    if count % 10000 == 0:
+                        print("Saving")
+                        saver.save(sess,savePath)
 
-                        if count % 1000 == 0:
-                            print("Saving")
-                            saver.save(sess,savePath)
-
-                        if coord.should_stop():
-                            break
-                except Exception,e:
-                    coord.request_stop(e)
-                finally:
-                    coord.request_stop()
-                    coord.join(threads)
-                print("Finished! Seen {0} examples".format(count))
-                print("Saving in {0}".format(savePath))
-                lrC = FLAGS.lr
-                FLAGS.lr /= FLAGS.lrD
-                print("Dropped learning rate from {0} to {1}".format(lrC,FLAGS.lr))
-                if trTe == "train":
-                    print("Saving")
-                    saver.save(sess,savePath)
-                sess.close()
-                        
+                    if coord.should_stop():
+                        break
+            except Exception,e:
+                coord.request_stop(e)
+            finally:
+                coord.request_stop()
+                coord.join(threads)
+            print("Finished! Seen {0} examples".format(count))
+            print("Saving in {0}".format(savePath))
+            lrC = FLAGS.lr
+            FLAGS.lr /= FLAGS.lrD
+            print("Dropped learning rate from {0} to {1}".format(lrC,FLAGS.lr))
+            if trTe == "train":
+                print("Saving")
+                saver.save(sess,savePath)
+            sess.close()
+                    
